@@ -640,7 +640,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9116_ubuntu16_apache2(self) -> None:
+    def test_9116_apache2_ubuntu16(self) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 16 with python2
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -700,7 +700,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9118_ubuntu18_apache2(self) -> None:
+    def test_9118_apache2_ubuntu18(self) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 18 with python3
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -753,7 +753,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9121_ubuntu22_apache2(self) -> None:
+    def test_9121_apache2_ubuntu22(self) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 22 with python2
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -811,7 +811,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9122_ubuntu22_apache2(self) -> None:
+    def test_9122_apache2_ubuntu22(self) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 22 with python3
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -864,7 +864,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9144_opensuse15_apache2_dockerfile(self) -> None:
+    def test_9144_apache2_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -924,7 +924,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9145_opensuse15_apache2_dockerfile(self) -> None:
+    def test_9145_apache2_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -980,7 +980,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9195_opensuse15_nginx_dockerfile(self) -> None:
+    def test_9195_nginx_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an NGINX HTTP service 
                  being installed and enabled.
@@ -1095,7 +1095,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9218_ubuntu18_postgres_dockerfile(self) -> None:
+    def test_9218_postgres_ubuntu18_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 16.04 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1156,7 +1156,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9222_ubuntu22_postgres_dockerfile(self) -> None:
+    def test_9222_postgres_ubuntu22_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 22.04 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1217,7 +1217,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9245_opensuse15_postgres_dockerfile(self) -> None:
+    def test_9245_postgres_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1496,7 +1496,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9318_ubuntu18_redis_dockerfile(self) -> None:
+    def test_9318_redis_ubuntu18_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1568,7 +1568,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9324_ubuntu18_redis_dockerfile(self) -> None:
+    def test_9324_redis_ubuntu18_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1640,7 +1640,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9345_opensuse15_redis_dockerfile(self) -> None:
+    def test_9345_redis_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1710,7 +1710,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9368_ubuntu18_redis_user_dockerfile(self) -> None:
+    def test_9368_redis_ubuntu18_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1786,7 +1786,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9374_ubuntu24_redis_user_dockerfile(self) -> None:
+    def test_9374_redis_ubuntu24_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1867,7 +1867,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9385_opensuse15_redis_user_dockerfile(self) -> None:
+    def test_9385_redis_opensuse15_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
             AND that AUTH works along with a USER process"""
@@ -1945,7 +1945,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9418_ubuntu18_mongod_dockerfile(self) -> None:
+    def test_9418_mongod_ubuntu18_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and mongod,
             check that mongo can reply with a hostInfo."""
         systemctl = tmp_systemctl3()
@@ -2015,7 +2015,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9445_opensuse15_mongod_dockerfile(self) -> None:
+    def test_9445_mongod_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
             check that mongo can reply witha  hostInfo."""
         systemctl = tmp_systemctl3()
@@ -2151,7 +2151,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9745_opensuse15_lamp_stack_php7(self) -> None:
+    def test_9745_lamp_stack_opensuse15_php7(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         systemctl = tmp_systemctl3()
         if not systemctl: self.skipTest("no python3 systemctl.py")
