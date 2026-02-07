@@ -92,16 +92,17 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
 7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
-# testbuilds run with a stripped systemctl.py variant (strip_python3 output) to cover both python2 and python3 examples
-builds testbuilds: ; $(MAKE) src/systemctl.py; $(BUILD) $(VV) $V --systemctl=src/systemctl.py --systemctl3=src/systemctl.py
-build3 test3: ; (BUILD) $(VV) $V # defaults to files/docker/systemctl3.py # skipping python2 tests
+# testbuilds run with a stripped systemctl.py variant to cover both python2/python3 example (meanwhile testing strip_python3 to work correctly)
+builds testbuilds: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) $(VV) $V --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
+build3 testonly3: ; (BUILD) $(VV) $V # defaults to files/docker/systemctl3.py # skipping python2 tests and the stripping tool
 t_%: ; $(MAKE) $@/s
-t_%/s: ; $(MAKE) src/systemctl.py; $(BUILD) "tes$(dir $@)" $(VV) $V --systemctl=src/systemctl.py --systemctl3=src/systemctl.py
+t_%/s: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) "tes$(dir $@)" $(VV) $V --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
 t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=$(PYTHON39)
 t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+# 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
 COVERAGE=--coverage
 est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" -vv --coverage --keep
@@ -123,10 +124,11 @@ real_5%: ; $(TESTS) "$(notdir $@)" -vv
 real_6%: ; $(TESTS) "$(notdir $@)" -vv
 real_7%: ; $(TESTS) "$(notdir $@)" -vv
 real_8%: ; $(TESTS) "$(notdir $@)" -vv
-t1: ; $(MAKE) test_1*
-t2: ; $(MAKE) test_2*
-t3: ; $(MAKE) test_3*
-t4: ; $(MAKE) test_4*
+t1 test1: ; $(MAKE) test_1*
+t2 test2: ; $(MAKE) test_2*
+t3 test3: ; $(MAKE) test_3*
+t4 test4: ; $(MAKE) test_4*
+t9 test9: ; $(MAKE) test_9*
 
 localtestlist = test_[1234]
 dockertestlist = test_[567]
@@ -300,6 +302,8 @@ clean:
 	- rm -rf tmp/systemctl.py
 	- rm -rf tmp.* types/tmp.*
 	- rm -rf .mypy_cache files/docker/.mypy_cache
+	- rm -rf src
+	- rm -rf build
 
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
@@ -312,10 +316,13 @@ src/README.md: README.md Makefile
 	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
 
 src/py.typed: files/docker/py.typed
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	cp $< $@
 src/systemctl3.py: files/docker/systemctl3.py
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	cp $< $@
 src/journalctl3.py: files/docker/journalctl3.py
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	cp $< $@
 
 # package sources - both stripped and unstripped python scripts and a README without github badges
@@ -438,20 +445,29 @@ striphints3.git:
 
 1: src/systemctl.py
 src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
 src/journalctl.py: files/docker/journalctl3.py $(STRIP_PYTHON3_PY) Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
 
 strip: tmp/systemctl_2.py
 tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	@ $(STRIPHINTS3) $< -o $@ $V --old-python
 	chmod +x $@
 
 2: tmp/systemctl.py
 tmp/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
 	@ $(STRIPHINTS3) $< -o $@ $V --run-python=python2
+	chmod +x $@
+3: tmp/systemctl3.py
+tmp/systemctl3.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
+	@ $(STRIPHINTS3) $< -o $@ $V --run-python=python3
 	chmod +x $@
 
 MYPY = mypy
