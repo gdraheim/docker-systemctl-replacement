@@ -2347,7 +2347,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9909_ssh_alma9_dockerfile(self) -> None:
+    def test_9909_sshd_alma9_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Almalinux, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2436,7 +2436,7 @@ class DockerBuildTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_9918_ubuntu18_ssh_dockerfile(self) -> None:
+    def test_9918_sshd_ubuntu18_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 18, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2507,7 +2507,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9924_ubuntu24_ssh_dockerfile(self) -> None:
+    def test_9924_sshd_ubuntu24_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 24, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2578,7 +2578,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9945_opensuse15_ssh_dockerfile(self) -> None:
+    def test_9945_sshd_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
