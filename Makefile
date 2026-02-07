@@ -132,11 +132,12 @@ t3 test3: ; $(MAKE) test_3*
 t4 test4: ; $(MAKE) test_4*
 t9 test9: ; $(MAKE) test_9*
 
-localtestlist = test_[1234]
+basetestlist = test_[1234]
 dockertestlist = test_[567]
 dockertestlist2 = st_[567]
-local testlocal: ; $(MAKE) "${localtestlist}"
-15.6/tests:  ; $(MAKE) "15.6/$(testslist)"
+base basetests: ; $(MAKE) test_1* test_2* test_3* test_4*
+docker dockertests: ; $(MAKE) test_5* test_6* test_7*
+15.6/tests:  ; $(MAKE) "15.6/$(dockertestslist)"
 15.5/tests:  ; $(MAKE) "15.5/$(dockertestlist)"
 15.4/tests:  ; $(MAKE) "15.4/$(dockertestlist)"
 15.2/tests:  ; $(MAKE) "15.2/$(dockertestlist)"
@@ -181,6 +182,17 @@ local testlocal: ; $(MAKE) "${localtestlist}"
 7.4/test2:   ; $(MAKE) "7.4/$(dockertestlist2)"
 7.3/test2:   ; $(MAKE) "7.3/$(dockertestlist2)"
 
+check: check2025
+	@ echo please run 'make checks' now
+25 check2025: ; $(TESTS) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4
+24 check2024: ; $(TESTS) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
+23 check2023: ; $(TESTS) $(VV) --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
+22 check2022: ; $(TESTS) $(VV) --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
+19 check2019: ; $(TESTS) $(VV) --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
+18 check2018: ; $(TESTS) $(VV) --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
+17 check2017: ; $(TESTS) $(VV) --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
+16 check2016: ; $(TESTS) $(VV) --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
+
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2019
@@ -222,16 +234,6 @@ checkall2018:
 	$(MAKE) -j1 15.0/tests 42.3/tests
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.0/test2 42.3/test2
-
-check: check2023
-	@ echo please run 'make checks' now
-24 check2024: ; $(TESTS) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
-23 check2023: ; $(TESTS) $(VV) --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-22 check2022: ; $(TESTS) $(VV) --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-19 check2019: ; $(TESTS) $(VV) --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
-18 check2018: ; $(TESTS) $(VV) --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
-17 check2017: ; $(TESTS) $(VV) --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
-16 check2016: ; $(TESTS) $(VV) --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
 
 checks: checks.1 checks.3 checks.4
 checks.1:
