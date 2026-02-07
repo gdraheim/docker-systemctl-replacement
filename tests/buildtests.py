@@ -1095,67 +1095,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9215_opensuse15_postgres_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
-            THEN we can create an image with an PostgreSql DB service 
-                 being installed and enabled.
-            Without a special startup.sh script or container-cmd 
-            one can just start the image and in the container
-            expecting that the service is started. Therefore,
-            WHEN we start the image as a docker container
-            THEN we can see a specific role with an SQL query
-            because the test script has created a new user account 
-            in the in the database with a known password. """
-        systemctl = tmp_systemctl3()
-        if not systemctl: self.skipTest("no python3 systemctl.py")
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        docker = _docker
-        curl = _curl
-        python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        latest = LATEST or os.path.basename(python)
-        testname = self.testname()
-        testdir = self.testdir()
-        dockerfile = "postgres-opensuse15.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        password = self.newpassword()
-        testpass = "Pass." + password
-        # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        container = self.ip_container(testname)
-        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
-        sh____(cmd.format(**locals()))
-        # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
-        query = "SELECT rolname FROM pg_roles"
-        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        cmd = "grep testuser_ok {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
-        # SAVE
-        cmd = "{docker} stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {saveto}/{savename}:latest"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}/{testname}:{latest}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
     def test_9218_ubuntu18_postgres_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 16.04 and python3, 
             THEN we can create an image with an PostgreSql DB service 
@@ -1247,6 +1186,67 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         testpass = "Test." + password
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
+        # THEN
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_9245_opensuse15_postgres_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can see a specific role with an SQL query
+            because the test script has created a new user account 
+            in the in the database with a known password. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "postgres-opensuse15.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        testpass = "Pass." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
