@@ -94,37 +94,38 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) --todo
 7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
 # testbuilds run with a stripped systemctl.py variant to cover both python2/python3 example (meanwhile testing strip_python3 to work correctly)
-builds testbuilds: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) $(VV) $V --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
-build3 testonly3: ; (BUILD) $(VV) $V # defaults to files/docker/systemctl3.py # skipping python2 tests and the stripping tool
+builds testbuilds: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) $(VV) $V $E --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
+build3 testonly3: ; (BUILD) $(VV) $V $E # defaults to files/docker/systemctl3.py # skipping python2 tests and the stripping tool
+local3: ; $(MAKE) builds3 E=--local
 t_%: ; $(MAKE) $@/s
-t_%/s: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) "tes$(dir $@)" $(VV) $V --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
-t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=$(PYTHON39)
-t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
-t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
-t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
-t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+t_%/s: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) "tes$(dir $@)" $(VV) $V $E --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
+t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=$(PYTHON39)
+t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
+t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
+t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
+t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 # 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) --coverage --keep
-st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(WITH2)
-test_1%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_2%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_3%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_4%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_5%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_6%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_7%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_8%: ; $(TESTS) "$(notdir $@)" $(VV)
-test_9%: ; $(BUILD) "$(notdir $@)" $(VV)
-real_1%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_2%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_3%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_4%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_5%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_6%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_7%: ; $(TESTS) "$(notdir $@)" $(VV)
-real_8%: ; $(TESTS) "$(notdir $@)" $(VV)
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV)  $V --coverage --keep
+st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $V $(WITH2)
+test_1%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_2%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_4%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_5%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_6%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_7%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_8%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_9%: ; $(BUILD) "$(notdir $@)" $(VV) $V
+real_1%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_2%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_4%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_5%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_6%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_7%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_8%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 t1 test1: ; $(MAKE) test_1*
 t2 test2: ; $(MAKE) test_2*
 t3 test3: ; $(MAKE) test_3*

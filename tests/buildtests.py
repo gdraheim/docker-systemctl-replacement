@@ -56,6 +56,8 @@ DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 RUNTIME = "/tmp/run-"
 
+LOCALPACKAGES = False
+REMOTEPACKAGES = False
 _maindir = os.path.abspath(os.path.dirname(__file__))
 _mirror = os.path.join(_maindir, "docker_mirror.py")
 _password = ""
@@ -326,6 +328,7 @@ class DockerBuildTest(unittest.TestCase):
             return "{add_hosts} {image}".format(**locals())
         return image
     def local_addhosts(self, dockerfile: str, extras: Optional[str]=None) -> str:
+        extras = "--local" if not extras and LOCALPACKAGES else ""
         image = ""
         for line in open(dockerfile):
             m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
@@ -341,7 +344,9 @@ class DockerBuildTest(unittest.TestCase):
             return self.start_mirror(image, extras)
         return ""
     def start_mirror(self, image:str, extras: Optional[str]=None) -> str:
-        extras = extras or ""
+        extras = "--local" if not extras and LOCALPACKAGES else ""
+        if REMOTEPACKAGES:
+            return ""
         docker = _docker
         mirror = _mirror
         cmd = "{mirror} start {image} --add-hosts {extras}"
@@ -2537,7 +2542,17 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
-        container = self.ip_container(testname)
+        for x in range(1,2,3):
+            container = self.ip_container(testname)
+            if not container:
+                time.sleep(1)
+                continue
+        logg.fatal("container=%s", container)
+        if not container:
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.debug.log")
+        assert container
         # THEN
         for attempt in range(9):
             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active ssh"
@@ -2683,6 +2698,10 @@ if __name__ == "__main__":
                   help="use a fixed password for examples with auth [%default]")
     _o.add_option("--cache", action="store_true", default=False,
                   help="never run docker build --no-cache [%default]")
+    _o.add_option("--local", action="store_true", default=LOCALPACKAGES,
+                  help="only use local package mirrors [%default]")
+    _o.add_option("--remote", action="store_true", default=REMOTEPACKAGES,
+                  help="only use remote package mirrors [%default]")
     _o.add_option("--latest", metavar="ver", default=LATEST,
                   help="define latest instead of python [%default]")
     _o.add_option("--todo", action="store_true", default=False,
@@ -2702,6 +2721,8 @@ if __name__ == "__main__":
     _docker = opt.docker
     _password = opt.password
     _verbose = "-v" if opt.verbose else ""
+    LOCALPACKAGES = opt.local
+    REMOTEPACKAGES = opt.remote
     LATEST = opt.latest
     if opt.cache:
         NOCACHE = NIX

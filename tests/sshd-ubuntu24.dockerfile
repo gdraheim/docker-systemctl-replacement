@@ -5,18 +5,20 @@ LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
 ARG PASS=P@ssw0rd.9d82fd2c7c83afb7d69213088203b6c6e402da0
 EXPOSE 22
 
-RUN apt-get update
-RUN apt-get install -y python3
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y python3
 COPY tmp/systemctl3.py /usr/bin/systemctl
 
 # RUN apt-get install -y passwd
 # RUN apt-cache search sshd
-RUN apt-get install -y openssh-server
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
 RUN rm -fv /etc/ssh/sshd_not_to_be_run
+COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN systemctl enable ssh
 #
 RUN useradd -g nogroup testuser -m
 RUN echo testuser:$PASS | chpasswd
 RUN tail /etc/passwd
 RUN TZ=UTC date -I > /home/testuser/date.txt
+RUN touch /var/log/systemctl.debug.log
 CMD ["/usr/bin/systemctl"]
