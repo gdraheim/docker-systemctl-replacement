@@ -34,7 +34,8 @@ _opensuse14 = False
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
-_systemctl_py = "files/docker/systemctl3.py"
+_systemctl_py = ""
+_systemctl3_py = "files/docker/systemctl3.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
@@ -196,35 +197,34 @@ def python_package(python: str, image: Optional[str] = None) -> str:
     return package.replace(".", "") # python3.11 => python311
 
 SYSTEMCTL=""
-_src_systemctl_py = "../files/docker/systemctl3.py" # pylint: disable=invalid-name
 _tmp_systemctl2_py = "tmp/systemctl.py"  # pylint: disable=invalid-name
 _tmp_systemctl3_py = "tmp/systemctl3.py"  # pylint: disable=invalid-name
-STRIP_PYTHON3 = "../../strip_python3/strip3/strip_python3.py"
-STRIPPED3 = False
 
-def tmp_systemctl3(stripped: Optional[bool]=None) -> str:
-    stripped = stripped if stripped is not None else STRIPPED3
-    if SYSTEMCTL:
-        return SYSTEMCTL
-    if stripped:
-        tmp_systemctl(_tmp_systemctl3_py)  # testing stripped python with a python3 interpreter
-    else:
-        if  (not os.path.exists(_tmp_systemctl3_py) or os.path.exists(F"{_tmp_systemctl3_py}i")
-            or os.path.getmtime(_tmp_systemctl3_py) < os.path.getmtime(_src_systemctl_py)):
-            tmpdir = os.path.dirname(_tmp_systemctl3_py)
-            if "/" in _tmp_systemctl3_py and not os.path.isdir(tmpdir):
-                os.makedirs(tmpdir)
-            shutil.copy2(_src_systemctl_py, _tmp_systemctl3_py)
-    return _tmp_systemctl3_py
+def tmp_systemctl3() -> Optional[str]:
+    src_systemctl3_py = _systemctl3_py if _systemctl3_py else _systemctl_py
+    if not src_systemctl3_py:
+        return None
+    if  (not os.path.exists(_tmp_systemctl3_py)) or (os.path.getmtime(_tmp_systemctl3_py) < os.path.getmtime(src_systemctl3_py)):
+        tmpdir = os.path.dirname(_tmp_systemctl3_py)
+        if "/" in _tmp_systemctl3_py and not os.path.isdir(tmpdir):
+            os.makedirs(tmpdir)
+        shutil.copy2(src_systemctl3_py, _tmp_systemctl3_py)
+    if os.path.exists(_tmp_systemctl3_py):
+        return _tmp_systemctl3_py
+    return None
 
-def tmp_systemctl(systemctl2: str = NIX) -> str:
-    tmp_systemctl_py = systemctl2 if systemctl2 else _tmp_systemctl2_py
-    if  (not os.path.exists(tmp_systemctl_py) or not os.path.exists(F"{tmp_systemctl_py}i")
-        or os.path.getmtime(tmp_systemctl_py) < os.path.getmtime(_src_systemctl_py)):
-        sh____(F"{STRIP_PYTHON3} {_src_systemctl_py} -y -o {tmp_systemctl_py}")
-        assert os.path.exists(F"{tmp_systemctl_py}i")
-        os.chmod(tmp_systemctl_py, 0o775)
-    return tmp_systemctl_py
+def tmp_systemctl() -> Optional[str]:
+    src_systemctl2_py = _systemctl_py # _systemctl_py is assumed to be a stripped variant (strip_python3 output)
+    if not src_systemctl2_py:
+        return None
+    if  (not os.path.exists(_tmp_systemctl2_py)) or (os.path.getmtime(_tmp_systemctl2_py) < os.path.getmtime(src_systemctl2_py)):
+        tmpdir = os.path.dirname(_tmp_systemctl2_py)
+        if "/" in _tmp_systemctl2_py and not os.path.isdir(tmpdir):
+            os.makedirs(tmpdir)
+        shutil.copy2(src_systemctl2_py, _tmp_systemctl2_py)
+    if os.path.exists(_tmp_systemctl2_py):
+        return _tmp_systemctl2_py
+    return None
 
 class DockerBuildTest(unittest.TestCase):
     def caller_testname(self) -> str:
@@ -376,6 +376,7 @@ class DockerBuildTest(unittest.TestCase):
     def test_91001_systemctl_testfile(self) -> None:
         """ the systemctl.py file to be tested does exist """
         systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -392,6 +393,7 @@ class DockerBuildTest(unittest.TestCase):
         self.rm_testdir()
     def test_91002_systemctl_version(self) -> None:
         systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -402,6 +404,7 @@ class DockerBuildTest(unittest.TestCase):
     def test_91003_systemctl_help(self) -> None:
         """ the '--help' option and 'help' command do work """
         systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
         cmd = "{systemctl} --help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -428,8 +431,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -477,8 +481,9 @@ class DockerBuildTest(unittest.TestCase):
              AND in this variant it runs under User=httpd right
                there from PID-1 started implicity in --user mode
             THEN it fails."""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
@@ -524,8 +529,9 @@ class DockerBuildTest(unittest.TestCase):
              AND in this variant it runs under User=httpd right
                there from PID-1 started implicity in --user mode.
             THEN it succeeds if modified"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -591,9 +597,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not TODO: self.skipTest("ubuntu-16 end of life")
-        tmp_systemctl()
         docker = _docker
         curl = _curl
         python = _python or _python2
@@ -650,8 +657,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         testname = self.testname()
@@ -702,8 +710,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl()
         docker = _docker
         curl = _curl
         python = _python or _python2
@@ -759,8 +768,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -811,8 +821,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         systemctl = tmp_systemctl()
+        if not systemctl: self.skipTest("no python2 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
         python = _python or _python2
@@ -870,8 +881,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -925,8 +937,9 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -977,9 +990,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1038,9 +1052,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1098,9 +1113,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1158,9 +1174,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1213,9 +1230,10 @@ class DockerBuildTest(unittest.TestCase):
                  being installed and enabled.
              AND in this variant it runs under User=postgres right
                there from PID-1 started implicity in --user mode."""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1282,9 +1300,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93509_redis_alma9_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Almalinux and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1350,9 +1369,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93559_redis_alma9_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Almalinux and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1425,9 +1445,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93715_opensuse15_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1494,9 +1515,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93718_ubuntu18_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1565,9 +1587,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93724_ubuntu18_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1636,9 +1659,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93768_ubuntu18_redis_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1711,9 +1735,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93774_ubuntu24_redis_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1792,9 +1817,10 @@ class DockerBuildTest(unittest.TestCase):
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
             AND that AUTH works along with a USER process"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1868,9 +1894,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93815_opensuse15_mongod_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
             check that mongo can reply witha  hostInfo."""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -1935,9 +1962,10 @@ class DockerBuildTest(unittest.TestCase):
     def test_93818_ubuntu18_mongod_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and mongod,
             check that mongo can reply with a hostInfo."""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2003,8 +2031,9 @@ class DockerBuildTest(unittest.TestCase):
         self.rm_testdir()
     def test_95109_lamp_stack_alma9(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php on Almalinux with python3"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2070,8 +2099,9 @@ class DockerBuildTest(unittest.TestCase):
         self.rm_testdir()
     def test_95115_opensuse15_lamp_stack_php7(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2136,9 +2166,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2210,9 +2241,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         max4 = _curl_timeout4
@@ -2266,10 +2298,11 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an ssh service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2353,10 +2386,11 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an ssh service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2425,9 +2459,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an ssh service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2494,9 +2529,10 @@ class DockerBuildTest(unittest.TestCase):
             THEN we can create an image with an ssh service 
                  being installed and enabled.
             Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
-        tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
@@ -2565,8 +2601,10 @@ if __name__ == "__main__":
                       epilog=__doc__.strip().split("\n", 1)[0])
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="increase logging level [%default]")
-    _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
+    _o.add_option("--with", "--systemctl", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
                   help="systemctl.py file to be tested (%default)")
+    _o.add_option("--src", "--systemctl3", metavar="FILE", dest="systemctl3_py", default=_systemctl3_py,
+                  help="systemctl3.py file to be tested (%default)")
     _o.add_option("--python3", metavar="EXE", default=_python3,
                   help="use another python2 execution engine [%default]")
     _o.add_option("--python2", metavar="EXE", default=_python2,
@@ -2597,6 +2635,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     _systemctl_py = opt.systemctl_py
+    _systemctl3_py = opt.systemctl3_py
     _python = opt.python
     _python2 = opt.python2
     _python3 = opt.python3
@@ -2610,6 +2649,10 @@ if __name__ == "__main__":
     #
     if opt.chdir:
         os.chdir(opt.chdir)
+        if _systemctl_py and not _systemctl_py.startswith("/"):
+            _systemctl_py = ("../" * (opt.chdir.count("/") +1)) +  _systemctl_py
+        if _systemctl3_py and not _systemctl3_py.startswith("/"):
+            _systemctl3_py = ("../" * (opt.chdir.count("/") +1)) +  _systemctl3_py
     #
     logfile = None
     if opt.logfile:

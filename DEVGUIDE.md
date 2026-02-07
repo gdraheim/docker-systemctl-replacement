@@ -124,7 +124,7 @@ examples in tests that are run by `testbuilds.py`.
 * `make install` # locally (`make ins`)
 * `make uninstall` # locally (`make uns`)
 * `make checks` # localtests and dockertests
-* `make builds`
+* `make package` # for pypi (`make pkg`)
 * `make coverage`
   * update `README.md` with the result percentage
 * edit `RELEASENOTES.md`
@@ -132,10 +132,10 @@ examples in tests that are run by `testbuilds.py`.
 * `git push` # and check for the workflow results on github
 * `make ins` 
 * `make uns` 
-* `make build`
+* `make pkg`
 * `make tag`
    * `git tag -F RELEASENOTES.md v1.x` # with the shown tag
 * `git push --tags` # to get the new "version" visible
-* `make build`
+* `make pkg`
    * followed by show twine command to push to pypi.org
 * update the short description on github

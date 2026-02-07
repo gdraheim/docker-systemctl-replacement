@@ -39,17 +39,14 @@ version:
 help:
 	$(PYTHON3) files/docker/systemctl3.py help
 
-alltests: CH CP UA DJ
+.PHONY: build tests src files notes tmp
+
 TESTS_PY = tests/testsuite.py
 TESTS = $(PYTHON3) $(TESTS_PY) $(TESTS_OPTIONS)
 BUILD_PY = tests/buildtests.py
 BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
-CH centos-httpd.dockerfile: ; $(TESTS) test_6001
-CP centos-postgres.dockerfile: ; $(TESTS) test_6002
-UA ubuntu-apache2.dockerfile: ; $(TESTS) test_6005
-DJ docker-jenkins: ; $(TESTS) test_900*
-
+# python2 is not available on standard Linux distros after 2024 (so these are obsolete make targets)
 WITH2 = --python=/usr/bin/python2 --with=tmp/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
@@ -95,11 +92,12 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
 7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
-builds testbuilds: ; $(BUILD) $(VV) $V --python=$(PYTHON39)
-t_%: ; $(MAKE) $@/9
-t_%/s: ; $(BUILD) "tes$(dir $@)" $(VV) $V 
+# testbuilds run with a stripped systemctl.py variant (strip_python3 output) to cover both python2 and python3 examples
+builds testbuilds: ; $(MAKE) src/systemctl.py; $(BUILD) $(VV) $V --systemctl=src/systemctl.py --systemctl3=src/systemctl.py
+build3 test3: ; (BUILD) $(VV) $V # defaults to files/docker/systemctl3.py # skipping python2 tests
+t_%: ; $(MAKE) $@/s
+t_%/s: ; $(MAKE) src/systemctl.py; $(BUILD) "tes$(dir $@)" $(VV) $V --systemctl=src/systemctl.py --systemctl3=src/systemctl.py
 t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=$(PYTHON39)
-t_%/2: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
@@ -242,22 +240,21 @@ checks.4:
 	ls -l tmp/systemctl.py,cover
 	@ echo ".... are you ready for 'make checkall' ?"
 
-checks2:  
-	rm .coverage* ; $(MAKE) checks2_coverage
-checks2_coverage:
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv --coverage \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
 checks3: 
 	rm .coverage* ; $(MAKE) checks3_coverage
 	coverage3 combine && coverage3 report && coverage3 annotate
 	ls -l tmp/systemctl.py,cover
+checks2_coverage: 
+	$(MAKE) tmp_systemctl_py_2
+	$(TESTS) -vv --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 checks3_coverage: 
 	$(MAKE) tmp_systemctl_py_3
 	$(TESTS) -vv --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage: coverage3
+	: with no python2 available the coverage is actually just python3 tests
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
@@ -278,6 +275,8 @@ tmp_systemctl_py_2:
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
+	chmod +x tmp/systemctl.py
+
 tmp_ubuntu:
 	if docker ps | grep $(UBU); then : ; else : \
 	; docker run --name $(UBU) -d $(UBUNTU) sleep 3333 \
@@ -306,17 +305,6 @@ copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
 	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi tests/
 
-dockerfiles:
-	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
-	; do test -f ../docker-systemctl-images/$$dockerfile || continue \
-	; echo "###################################################################################################" > test-$$dockerfile \
-	; echo "## this file is a copy from gdraheim/docker-systemctl-images where more real world examples are :)"  >> test-$$dockerfile \
-	; echo "## https://github.com/gdraheim/docker-systemctl-images/blob/develop/$$dockerfile" >> test-$$dockerfile \
-	; echo "###################################################################################################" >> test-$$dockerfile \
-	; cat ../docker-systemctl-images/$$dockerfile >> test-$$dockerfile \
-	; wc -l test-$$dockerfile \
-	; done
-
 ############## https://pypi.org/...
 
 src/README.md: README.md Makefile
@@ -330,24 +318,24 @@ src/systemctl3.py: files/docker/systemctl3.py
 src/journalctl3.py: files/docker/journalctl3.py
 	cp $< $@
 
-buildclean bb:
+# package sources - both stripped and unstripped python scripts and a README without github badges
+SRC= src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py 
+src: src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py 
+
+buildclean bb rm-src:
 	- rm -r src/*.egg-info src/__pycache__
-	@ test ! -f src/README.md || rm -v src/README.md
-	@ test ! -f src/systemctl.py || rm -v src/systemctl.py* 
-	@ test ! -f src/systemctl3.py || rm -v src/systemctl3.py* 
-	@ test ! -f src/journalctl.py || rm -v src/journalctl.py* 
-	@ test ! -f src/py.typed || rm -v src/py.*
+	@ for src in $(SRC); do test ! -f $$src || rm -v $$src*; done
 distclean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
 
+# packaging needs python3.9+ for strip_python3 to work (should actually be common after 2025)
 PIP3 = $(PYTHON3) -m pip
 TWINE3 = $(PYTHON3) -m twine
 
-.PHONY: build
-build:  ; $(MAKE) build3 PYTHON3=$(PYTHON39)
-build3:
+pkg package:  ; $(MAKE) pkg9 PYTHON3=$(PYTHON39)
+pkg9 package3:
 	$(MAKE) distclean
-	$(MAKE) src/README.md src/systemctl.py src/systemctl3.py src/journalctl.py src/journalctl3.py src/py.typed
+	$(MAKE) $(SRC)
 	# pip install --root=~/local . -v
 	$(PYTHON3) -m build
 	$(MAKE) buildclean
@@ -358,7 +346,7 @@ build3:
 ins install: ;	$(MAKE) install3 PYTHON3=$(PYTHON39)
 install3:
 	$(MAKE) distclean
-	$(MAKE) src/README.md src/systemctl.py src/systemctl3.py src/journalctl.py src/journalctl3.py src/py.typed
+	$(MAKE) $(SRC)
 	$(PIP3) install --no-compile --user .
 	$(MAKE) buildclean
 	$(MAKE) show3 | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
@@ -448,6 +436,7 @@ striphints3.git:
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
+1: src/systemctl.py
 src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
 	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
