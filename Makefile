@@ -14,6 +14,7 @@ PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
 GIT=git
 VERFILES = files/docker/systemctl3.py tests/testsuite.py pyproject.toml
+VV=-vv
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -49,48 +50,48 @@ BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 # python2 is not available on standard Linux distros after 2024 (so these are obsolete make targets)
 WITH2 = --python=/usr/bin/python2 --with=tmp/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
-todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
-15.6/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.6
-15.5/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.5
-15.4/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4
-15.2/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
-15.1/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1
-15.0/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
-42.3/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3
-42.2/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2
-24.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:24.04
-22.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:22.04
-20.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:20.04
-19.10/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
-18.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04
-16.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04
-9.4/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.4
-9.3/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.3
-9.1/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.1
-8.1/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911
-8.0/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905
-7.7/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908
-7.6/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810
-7.5/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
-7.4/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
-7.3/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
-15.4/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4 $(WITH2)
-15.2/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
-15.1/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
-15.0/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
-42.3/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3      $(WITH2)
-42.2/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2      $(WITH2)
-22.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:22.04       $(WITH2)
-20.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:20.04       $(WITH2)
-18.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04       $(WITH2)
-16.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04       $(WITH2)
-8.1/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911    $(WITH2)
-8.0/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905    $(WITH2)
-7.7/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908    $(WITH2)
-7.6/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810    $(WITH2)
-7.5/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
-7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
-7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
+todo/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) --todo
+15.6/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.6
+15.5/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.5
+15.4/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.4
+15.2/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.2
+15.1/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.1
+15.0/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.0
+42.3/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse:42.3
+42.2/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=opensuse:42.2
+24.04/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:24.04
+22.04/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:22.04
+20.04/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:20.04
+19.10/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:19.10
+18.04/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:18.04
+16.04/test_%:            ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:16.04
+9.4/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=almalinux:9.4
+9.3/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=almalinux:9.3
+9.1/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=almalinux:9.1
+8.1/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:8.1.1911
+8.0/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:8.0.1905
+7.7/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:7.7.1908
+7.6/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:7.6.1810
+7.5/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:7.5.1804
+7.4/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:7.4.1708
+7.3/test_%:              ; $(TESTS)   "$(notdir $@)" $(VV) $(FORCE) --image=centos:7.3.1611
+15.4/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.4 $(WITH2)
+15.2/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
+15.1/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
+15.0/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
+42.3/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse:42.3      $(WITH2)
+42.2/st_%:  ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=opensuse:42.2      $(WITH2)
+22.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:22.04       $(WITH2)
+20.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:20.04       $(WITH2)
+18.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:18.04       $(WITH2)
+16.04/st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=ubuntu:16.04       $(WITH2)
+8.1/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:8.1.1911    $(WITH2)
+8.0/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:8.0.1905    $(WITH2)
+7.7/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.7.1908    $(WITH2)
+7.6/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.6.1810    $(WITH2)
+7.5/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.5.1804    $(WITH2)
+7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.4.1708    $(WITH2)
+7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
 # testbuilds run with a stripped systemctl.py variant to cover both python2/python3 example (meanwhile testing strip_python3 to work correctly)
 builds testbuilds: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) $(VV) $V --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
@@ -105,25 +106,25 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 # 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" -vv --coverage --keep
-st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(WITH2)
-test_1%: ; $(TESTS) "$(notdir $@)" -vv
-test_2%: ; $(TESTS) "$(notdir $@)" -vv
-test_3%: ; $(TESTS) "$(notdir $@)" -vv
-test_4%: ; $(TESTS) "$(notdir $@)" -vv
-test_5%: ; $(TESTS) "$(notdir $@)" -vv
-test_6%: ; $(TESTS) "$(notdir $@)" -vv
-test_7%: ; $(TESTS) "$(notdir $@)" -vv
-test_8%: ; $(TESTS) "$(notdir $@)" -vv
-test_9%: ; $(BUILD) "$(notdir $@)" -vv
-real_1%: ; $(TESTS) "$(notdir $@)" -vv
-real_2%: ; $(TESTS) "$(notdir $@)" -vv
-real_3%: ; $(TESTS) "$(notdir $@)" -vv
-real_4%: ; $(TESTS) "$(notdir $@)" -vv
-real_5%: ; $(TESTS) "$(notdir $@)" -vv
-real_6%: ; $(TESTS) "$(notdir $@)" -vv
-real_7%: ; $(TESTS) "$(notdir $@)" -vv
-real_8%: ; $(TESTS) "$(notdir $@)" -vv
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) --coverage --keep
+st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $(WITH2)
+test_1%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_2%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_3%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_4%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_5%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_6%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_7%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_8%: ; $(TESTS) "$(notdir $@)" $(VV)
+test_9%: ; $(BUILD) "$(notdir $@)" $(VV)
+real_1%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_2%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_3%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_4%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_5%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_6%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_7%: ; $(TESTS) "$(notdir $@)" $(VV)
+real_8%: ; $(TESTS) "$(notdir $@)" $(VV)
 t1 test1: ; $(MAKE) test_1*
 t2 test2: ; $(MAKE) test_2*
 t3 test3: ; $(MAKE) test_3*
@@ -223,13 +224,13 @@ checkall2018:
 
 check: check2023
 	@ echo please run 'make checks' now
-24 check2024: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
-23 check2023: ; $(TESTS) -vv --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-22 check2022: ; $(TESTS) -vv --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-19 check2019: ; $(TESTS) -vv --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
-18 check2018: ; $(TESTS) -vv --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
-17 check2017: ; $(TESTS) -vv --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
-16 check2016: ; $(TESTS) -vv --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
+24 check2024: ; $(TESTS) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
+23 check2023: ; $(TESTS) $(VV) --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
+22 check2022: ; $(TESTS) $(VV) --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
+19 check2019: ; $(TESTS) $(VV) --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
+18 check2018: ; $(TESTS) $(VV) --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
+17 check2017: ; $(TESTS) $(VV) --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
+16 check2016: ; $(TESTS) $(VV) --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
 
 checks: checks.1 checks.3 checks.4
 checks.1:
@@ -248,11 +249,11 @@ checks3:
 	ls -l tmp/systemctl.py,cover
 checks2_coverage: 
 	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv --coverage \
+	$(TESTS) $(VV) --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 checks3_coverage: 
 	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv --coverage \
+	$(TESTS) $(VV) --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage: coverage3
@@ -264,10 +265,10 @@ coverage: coverage3
 	- $(PYTHON3) -m coverage html -o tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
 coverage2: coverage0
-	$(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
+	$(TESTS) $(VV) --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 coverage3: coverage0
-	$(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
+	$(TESTS) $(VV) --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 coverage0: ; rm .coverage* ; $(MAKE) tmp/systemctl.py
 
@@ -291,10 +292,10 @@ tmp_ubuntu:
 UBU=test_ubuntu
 ubu/test_%:
 	$(MAKE) tmp_ubuntu
-	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
+	docker exec $(UBU) python3 /root/testsuite.py -C /root $(VV) $(notdir $@)
 ubu/st_%:
 	$(MAKE) tmp_ubuntu
-	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv te$(notdir $@)
+	docker exec $(UBU) python3 /root/testsuite.py -C /root $(VV) te$(notdir $@)
 
 clean:
 	- rm .coverage*
@@ -438,7 +439,7 @@ striphints3.git:
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
 	; fi
 	echo "def test(a: str) -> str: return a" > tmp.striphints.py
-	$(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out -vv
+	$(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out $(VV)
 	cat tmp.striphints.py.out | tr '\\\n' '|' && echo
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
@@ -486,7 +487,7 @@ ttype:; $(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) testsuite.py
 box:
 	docker rm -f $@ ; docker run -d --name $@ --rm=true centos:centos7 sleep 600
 	docker cp files/docker/systemctl.py box:/usr/bin/systemctl
-	docker exec box systemctl daemon-reload -vvv
+	docker exec box systemctl daemon-reload $(VV)
 	@ echo : docker exec -it box bash
 
 -include Makefile.tmp.mk

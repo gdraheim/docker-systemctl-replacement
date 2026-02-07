@@ -59,6 +59,7 @@ RUNTIME = "/tmp/run-"
 _maindir = os.path.abspath(os.path.dirname(__file__))
 _mirror = os.path.join(_maindir, "docker_mirror.py")
 _password = ""
+_verbose = ""
 
 def decodes(text: Union[str, bytes, None]) -> Optional[str]:
     if text is None: return None
@@ -2371,7 +2372,7 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2392,9 +2393,10 @@ class DockerBuildTest(unittest.TestCase):
             if not sx____(cmd.format(**locals())):
                 break
             time.sleep(2)
+        v=F"{_verbose}"
         try:
-            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-            cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+            cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
             sh____(cmd.format(**locals()))
             cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
             sh____(cmd.format(**locals()))
@@ -2406,8 +2408,8 @@ class DockerBuildTest(unittest.TestCase):
                 raise
             self.skipTest("TODO: ssh server is not running????")
         try:
-            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-            cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+            cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
             sh____(cmd.format(**locals()))
             cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
             sh____(cmd.format(**locals()))
@@ -2459,7 +2461,7 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2481,13 +2483,14 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        v=F"{_verbose}"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
@@ -2531,7 +2534,7 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2553,13 +2556,14 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        v=F"{_verbose}"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
@@ -2601,7 +2605,7 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2623,13 +2627,14 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        v=F"{_verbose}"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
@@ -2696,6 +2701,7 @@ if __name__ == "__main__":
     _mirror = opt.mirror
     _docker = opt.docker
     _password = opt.password
+    _verbose = "-v" if opt.verbose else ""
     LATEST = opt.latest
     if opt.cache:
         NOCACHE = NIX
