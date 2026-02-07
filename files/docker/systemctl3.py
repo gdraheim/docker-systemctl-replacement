@@ -5225,7 +5225,7 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
-        return status # and not missing
+        return status and not missing
     def reset_failed_unit(self, unit: str) -> bool:
         conf = self.unitfiles.load_conf(unit)
         if not conf:
