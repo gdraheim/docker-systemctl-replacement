@@ -88,3 +88,8 @@ for a minimum  python version of python3.6 if systemctl3.py is being used
 unmodified  (not handled by strip_python3). By 2026 even python3.9 has 
 been out of maintenance, so expect that features up to that version will
 picked up.
+
+The Release 1.7 does support AssertionX and ConditionX clauses in 
+unit descriptors. However the implementation is about the same as
+systemctl3.py can not wait for condition to come true to start a
+service. It can only fail early if the assertion is not met.
