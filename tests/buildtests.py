@@ -377,6 +377,7 @@ class DockerBuildTest(unittest.TestCase):
         """ the systemctl.py file to be tested does exist """
         systemctl = tmp_systemctl()
         if not systemctl: self.skipTest("no python2 systemctl.py")
+        if not os.path.exists("/usr/bin/python"): self.skipTest("no /usr/bin/python found")
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -391,9 +392,29 @@ class DockerBuildTest(unittest.TestCase):
         shutil.copy(systemctl, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
-    def test_91002_systemctl_version(self) -> None:
+    def test_91002_systemctl_testfile(self) -> None:
+        """ the systemctl.py file to be tested does exist """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists("/usr/bin/python3"): self.skipTest("no /usr/bin/python3 found")
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        logg.info("...")
+        logg.info("testname %s", testname)
+        logg.info(" testdir %s", testdir)
+        logg.info("and root %s", root)
+        target = "/usr/bin/systemctl"
+        target_folder = os_path(root, os.path.dirname(target))
+        os.makedirs(target_folder)
+        target_systemctl = os_path(root, target)
+        shutil.copy(systemctl, target_systemctl)
+        self.assertTrue(os.path.isfile(target_systemctl))
+        self.rm_testdir()
+    def test_91003_systemctl_version(self) -> None:
         systemctl = tmp_systemctl()
         if not systemctl: self.skipTest("no python2 systemctl.py")
+        if not os.path.exists("/usr/bin/python"): self.skipTest("no /usr/bin/python found")
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -401,10 +422,42 @@ class DockerBuildTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 219"))
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def test_91003_systemctl_help(self) -> None:
+    def test_91004_systemctl_version(self) -> None:
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists("/usr/bin/python3"): self.skipTest("no /usr/bin/python3 found")
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "systemd 219"))
+        self.assertTrue(greps(out, "via systemctl.py"))
+        self.assertTrue(greps(out, "[+]SYSVINIT"))
+    def test_91005_systemctl_help(self) -> None:
         """ the '--help' option and 'help' command do work """
         systemctl = tmp_systemctl()
         if not systemctl: self.skipTest("no python2 systemctl.py")
+        if not os.path.exists("/usr/bin/python"): self.skipTest("no /usr/bin/python found")
+        cmd = "{systemctl} --help"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "--root=PATH"))
+        self.assertTrue(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "--init"))
+        self.assertTrue(greps(out, "for more information"))
+        self.assertFalse(greps(out, "reload-or-try-restart"))
+        cmd = "{systemctl} help"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
+    def test_91006_systemctl_help(self) -> None:
+        """ the '--help' option and 'help' command do work """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists("/usr/bin/python3"): self.skipTest("no /usr/bin/python3 found")
         cmd = "{systemctl} --help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
