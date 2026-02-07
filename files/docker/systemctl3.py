@@ -7169,7 +7169,7 @@ def main() -> int:
                   help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true", default=_no_pager,
                   help="Do not pipe output into pager (mostly ignored)")
-    _o.add_option("--no-warn", action="store_true", 
+    _o.add_option("--no-warn", action="store_true",
                   help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("--maxtimeout", metavar="SEC", default=DefaultMaximumTimeout,
