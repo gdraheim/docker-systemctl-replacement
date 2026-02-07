@@ -3585,7 +3585,7 @@ class Systemctl:
         try:
             data, addr = notify.socket.recvfrom(4096)
             assert isinstance(data, bytes)
-            if result:
+            if data:
                 result = data.decode("utf-8")
                 result_txt = result.replace("\n", "|")
                 result_len = len(result)
