@@ -20957,9 +20957,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # inspect logfile
         log = lines(open(logfile))
         logg.info("logs \n| %s", "\n| ".join(log))
-        self.assertEqual(log[0], "stop-A")
+        self.assertEqual(log[0], "stop-C")
         self.assertEqual(log[1], "stop-B")
-        self.assertEqual(log[2], "stop-C")
+        self.assertEqual(log[2], "stop-A")
         os.remove(logfile)
         #
         kill_testsleep = "{systemctl} __killall {testsleep}"
