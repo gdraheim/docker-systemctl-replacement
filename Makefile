@@ -235,53 +235,17 @@ checkall2018:
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.0/test2 42.3/test2
 
-checks: checks.1 checks.3 checks.4
-checks.1:
-	- rm .coverage* 
-checks.3:
-	$(MAKE) checks3_coverage
-	for i in .coverage*; do mv $$i $$i.cov3; done
-checks.4:
-	coverage combine && coverage report && coverage annotate
-	ls -l tmp/systemctl.py,cover
-	@ echo ".... are you ready for 'make checkall' ?"
-
-checks3: 
-	rm .coverage* ; $(MAKE) checks3_coverage
-	coverage3 combine && coverage3 report && coverage3 annotate
-	ls -l tmp/systemctl.py,cover
-checks2_coverage: 
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) $(VV) --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-checks3_coverage: 
-	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) $(VV) --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-coverage: coverage3
+coverage:
 	: with no python2 available the coverage is actually just python3 tests
+	- rm .coverage*
+	$(TESTS) $(VV) --coverage ${basetests} 
+	$(TESTS) $(VV) --coverage ${dockertests} 
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
 	- $(PYTHON3) -m coverage html -o tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
-coverage2: coverage0
-	$(TESTS) $(VV) --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-coverage3: coverage0
-	$(TESTS) $(VV) --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-coverage0: ; rm .coverage* ; $(MAKE) tmp/systemctl.py
-
-tmp_systemctl_py_2:
-	@ test -d tmp || mkdir tmp
-	@ cp files/docker/systemctl.py tmp/systemctl.py
-tmp_systemctl_py_3:
-	@ test -d tmp || mkdir tmp
-	@ cp files/docker/systemctl3.py tmp/systemctl.py
-	chmod +x tmp/systemctl.py
 
 tmp_ubuntu:
 	if docker ps | grep $(UBU); then : ; else : \
