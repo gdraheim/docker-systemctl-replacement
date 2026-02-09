@@ -121,13 +121,13 @@ examples in tests that are run by `testbuilds.py`.
 * `make type`
 * `make lint`
 * `make style`
-* `make install` # locally (`make ins`)
-* `make uninstall` # locally (`make uns`)
+* `make install` # locally (shorthand `make ins`)
+* `make uninstall` # locally (shorthand `make uns`)
 * `make check` # combines unittests basetests dockertests
   * `make basetests` # or just (`make base`)
   * `make dockertests` # or just (`make docker`)
 * `make checkall` # dockertests with variants of image versions
-* `make package` # for pypi (`make pkg`)
+* `make package` # for pypi (shorthand `make pkg`)
 * `make coverage`
   * update `README.md` with the result percentage
 * edit `RELEASENOTES.md`

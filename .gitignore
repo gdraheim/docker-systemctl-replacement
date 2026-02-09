@@ -19,3 +19,4 @@ build
 *.egg-info
 .vscode/settings.json
 *.tmp.mk
+*.xml
