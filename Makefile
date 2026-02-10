@@ -241,17 +241,16 @@ coverage:
 	- rm .coverage*
 	$(MAKE) $(COVERSRC)
 	touch $(COVERSRC)
-	$(TESTS) $(VV) --coverage ${basetests} --systemctl3=$(COVERSRC)
-	$(TESTS) $(VV) --coverage ${dockertests} --systemctl3=$(COVERSRC)
+	$(TESTS) $(VV) --coverage ${basetests} --with=$(COVERSRC)
+	$(TESTS) $(VV) --coverage ${dockertests} --with=$(COVERSRC)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
-	- $(PYTHON3) -m coverage html -o tmp/htmlcov
 	ls -l $(COVERSRC),cover
-	echo $$(expr $$(expr $$(stat -c %Y $(COVERSRC)) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+	@ echo = $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
 coveragetime mins:
-	echo $$(expr $$(expr $$(stat -c %Y $(COVERSRC)) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+	echo === $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
 
