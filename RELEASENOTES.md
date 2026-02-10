@@ -1,4 +1,31 @@
-RELEASE 1.5 - now switching to 1.7
+RELEASE 1.7
+
+Python2 systemctl.py has been removed. If you need then use pip to
+install the pypi.org package which contains the python2 variant.
+
+The 1.7 branch does support AssertionX and ConditionX clauses in 
+unit descriptors. However the implementation is about the same 
+for both as systemctl3.py can not wait for condition to come true 
+to start a service. It can only fail early if the assertion is not met.
+
+With python2 being dropped from sources, so is the pyi typehints file.
+Instead the python3 systemctl3.py does not contain typehints in
+the sourcecode. This gives a minimum of Python3.6 to use that file.
+In the near future, Python3.9 may become the minimum.
+
+That's also needed for the strip_python3 project that has been in 
+development during 2025. That tool can strip python3 source code
+from all typehints putting them into a parallel pyi file. That's
+also done for the pypi package. The tool can replace a lot of
+python3 syntax making the file even python2 compatible. So that's
+used for shipping on newer python projects now.
+
+Note that python2 can not be installed on Ubuntu24.04 and AlmaLinux 9.3 (202311). 
+The RHEL7 distribution runs out of support by June 2024 (with some
+extended support till 2026). As such, python2 can only be tested
+within docker containers with older os releases.
+
+RELEASE 1.5 
 
 The release branch 1.4 has been stable for a long time. Nethertheless there
 is still much room for improvement which is also shown by the hundreds of
@@ -61,35 +88,4 @@ will not be merged soon but the foundation is there where the Python code
 and C/C++ code represent the same logic with the same variables and
 the same function names and types.
 
-RELEASE 1.7
 
-Python2 can not be installed on Ubuntu24.04 and AlmaLinux 9.3 (202311). 
-The RHEL7 distribution runs out of support by June 2024 (with some
-extended support till 2026). As such the Python2 development in this
-project will be mostly dropped after 2024. The developments for a 2.x
-version in 2025 were never released however. Instead the project picked 
-up some of the changes in 2025 merging them into a 1.7 release 
-series (version 1.6 is another branch that was never released). 
-
-The release 1.7 is taking advantage of the strip_python3 project 
-that had been developed during 2025 as a side-project. The
-strip_python3 tool allows to use modern python3 features (syntax and
-library parts) during development replacing them with compatible older 
-features for shipping to pypi.org. That way systemctl.py can be installed 
-on very old systems. Additionally, a back-to-python2 output script can 
-be tested on the developer side to actually work as expected. As such
-python2 does still get minimal support - the easiest way to get a
-python2 systemctl.py is by dowloading the pypi package using "pip".
-
-As a consequence, the systemctl3.pyi typehints file is gone, just as 
-the systemctl.py python2 script has been removed from the git repo. 
-Instead there is only systemctl3.py that includes typehints - that makes 
-for a minimum  python version of python3.6 if systemctl3.py is being used 
-unmodified  (not handled by strip_python3). By 2026 even python3.9 has 
-been out of maintenance, so expect that features up to that version will
-picked up.
-
-The Release 1.7 does support AssertionX and ConditionX clauses in 
-unit descriptors. However the implementation is about the same as
-systemctl3.py can not wait for condition to come true to start a
-service. It can only fail early if the assertion is not met.
