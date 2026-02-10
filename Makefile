@@ -299,10 +299,14 @@ src/systemctl3.py: files/docker/systemctl3.py
 src/journalctl3.py: files/docker/journalctl3.py
 	test -d $(dir $@) || mkdir -v $(dir $@)
 	cp $< $@
+src/__main__.py: Makefile
+	{ echo '#! /usr/bin/env python3'; echo 'import sys' \
+	; echo 'from .systemctl3 import main'; echo 'sys.exit(main())' \
+	; } > $@
 
 # package sources - both stripped and unstripped python scripts and a README without github badges
-SRC= src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py 
-src: src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py 
+SRC= src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py src/__main__.py
+src: src/README.md src/systemctl3.py src/journalctl3.py src/py.typed src/systemctl.py src/journalctl.py src/__main__.py
 
 buildclean bb rm-src:
 	- rm -r src/*.egg-info src/__pycache__
