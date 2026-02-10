@@ -6965,7 +6965,7 @@ def runcommand(command: str, *modules: str) -> int:
         exitcode = is_not_ok(systemctl.clean_modules(*modules))
     elif command in ["command"]:
         print_str_list(systemctl.command_of_unit(*modules))
-    elif command in ["daemon-reload"]:
+    elif command in ["daemon-reload", "daemon-reexec"]:
         exitcode = is_not_ok(systemctl.daemon_reload_target())
     elif command in ["default"]:
         exitcode = is_not_ok(systemctl.default_system())
