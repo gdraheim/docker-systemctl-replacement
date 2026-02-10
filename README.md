@@ -64,7 +64,7 @@ files that are installed by the standard application packages
 define the actual commands to start/stop a service in their
 ExecStart/ExecStop settings.
 
-When installing systemctl.py as /usr/bin/systemctl in a
+When installing systemctl3.py as /usr/bin/systemctl in a
 container then it provides enough functionality that
 deployment scripts for virtual machines continue to
 work unchanged when trying to start/stop, enable/disable
@@ -85,7 +85,7 @@ shall be run on real virtual machines can be tested
 with docker containers. However in newer centos/ubuntu
 images you need to check for python first.
 
-    - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+    - copy: src="files/docker/systemctl3.py" dest="/usr/bin/systemctl"
     - package: name="python"
     - file: name="/run/systemd/system/" state="directory"
     - service: name="dbus.service" state="stopped"
@@ -165,7 +165,7 @@ There is an extensive testsuite in the project that allows
 for a high line coverage of the tool. All the major functionality
 of the systemctl replacement script is being tested so that its 
 usage in continuous development pipeline will no break on updates 
-of the script. If the systemctl.py script has some important
+of the script. If the systemctl replacment script has some important
 changes in the implementation details it will be marked with
 an update of the major version.
 
@@ -176,12 +176,9 @@ a number of packages during provisioning - but with the help of the
 scripting this can be reduced a lot (it even runs without internet connection).
 
 Some real world examples have been cut out into a separate
-project. This includes dockerfile and ansible based tests
-to provide common applications like webservers, databases
-and even a Jenkins application. You may want to have a look
-at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
-list.
-
+project. See [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
+for a list. Those have been mostly merged back to the v1.7
+series in 2026, so you can just check `tests/*.dockerfile`.
 
 See [TESTSUITE](TESTUITE.md) for more details.
 
