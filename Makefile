@@ -235,17 +235,25 @@ checkall2018:
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.0/test2 42.3/test2
 
+# with python2 being usually not available the coverage is actually just python3 tests now
+COVERSRC=src/systemctl3.py
 coverage:
-	: with no python2 available the coverage is actually just python3 tests
 	- rm .coverage*
-	$(TESTS) $(VV) --coverage ${basetests} 
-	$(TESTS) $(VV) --coverage ${dockertests} 
+	$(MAKE) $(COVERSRC)
+	touch $(COVERSRC)
+	$(TESTS) $(VV) --coverage ${basetests} --systemctl3=$(COVERSRC)
+	$(TESTS) $(VV) --coverage ${dockertests} --systemctl3=$(COVERSRC)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
 	- $(PYTHON3) -m coverage html -o tmp/htmlcov
-	ls -l tmp/systemctl.py,cover
+	ls -l $(COVERSRC),cover
+	echo $$(expr $$(expr $$(stat -c %Y $(COVERSRC)) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+coveragetime mins:
+	echo $$(expr $$(expr $$(stat -c %Y $(COVERSRC)) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
+coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
 
 tmp_ubuntu:
 	if docker ps | grep $(UBU); then : ; else : \
@@ -399,43 +407,52 @@ striphints.git:
 
 STRIP_PYTHON3_GIT_URL = https://github.com/gdraheim/strip_python3
 STRIP_PYTHON3_GIT = ../strip_python3
-STRIP_PYTHON3_PY = $(STRIP_PYTHON3_GIT)/strip3/strip_python3.py
-STRIPHINTS3 = $(PYTHON39) $(STRIP_PYTHON3_PY) $(STRIP_PYTHON3_OPTIONS)
-striphints3.git:
+STRIP_PYTHON3_PY = $(STRIP_PYTHON3_GIT)/tool/strip_python3.py
+ifeq ("$(wildcard $(STRIP_PYTHON3_PY))", "$(STRIP_PYTHON3_PY)")
+STRIP_PYTHON3_SRC = $(STRIP_PYTHON3_PY)
+STRIP_PYTHON3_RUN = $(STRIP_PYTHON3_PY)
+else
+STRIP_PYTHON3_SRC =
+STRIP_PYTHON3_RUN = -m strip_python3
+endif
+STRIP_PYTHON3 = $(PYTHON39) $(STRIP_PYTHON3_RUN) $(STRIP_PYTHON3_OPTIONS)
+strip_python3.git:
 	set -ex ; if test -d $(STRIP_PYTHON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
 	; fi
-	echo "def test(a: str) -> str: return a" > tmp.striphints.py
-	$(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out $(VV)
-	cat tmp.striphints.py.out | tr '\\\n' '|' && echo
-	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
-	rm tmp.striphints.*
+	echo "def test(a: str) -> str: return a" > tmp.strip_python3.py
+	$(PYTHON39) $(STRIP_PYTHON3_PY) tmp.strip_python3.py -o tmp.strip_python3.py.out $(VV)
+	cat tmp.strip_python3.py.out | tr '\\\n' '|' && echo
+	test "def test(a):|    return a|" = "`cat tmp.strip_python3.py.out | tr '\\\\\\n' '|'`"
+	rm tmp.strip_python3.*
+strip_python3:
+	$(PYTHON39) -m pip install $@
 
 1: src/systemctl.py
-src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_SRC) Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
+	@ $(STRIP_PYTHON3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
-src/journalctl.py: files/docker/journalctl3.py $(STRIP_PYTHON3_PY) Makefile
+src/journalctl.py: files/docker/journalctl3.py $(STRIP_PYTHON3_SRC) Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
+	@ $(STRIP_PYTHON3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
 
 strip: tmp/systemctl_2.py
-tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3_SRC) Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	@ $(STRIPHINTS3) $< -o $@ $V --old-python
+	@ $(STRIP_PYTHON3) $< -o $@ $V --old-python
 	chmod +x $@
 
 2: tmp/systemctl.py
-tmp/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+tmp/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_SRC) Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	@ $(STRIPHINTS3) $< -o $@ $V --run-python=python2
+	$(STRIP_PYTHON3) $< -o $@ $V --no-comments --run-python=python2
 	chmod +x $@
 3: tmp/systemctl3.py
-tmp/systemctl3.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+tmp/systemctl3.py: files/docker/systemctl3.py $(STRIP_PYTHON3_SRC) Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	@ $(STRIPHINTS3) $< -o $@ $V --run-python=python3
+	@ $(STRIP_PYTHON3) $< -o $@ $V --no-comments --run-python=python3
 	chmod +x $@
 
 MYPY = mypy

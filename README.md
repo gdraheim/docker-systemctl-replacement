@@ -1,13 +1,13 @@
 [![Style Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml)
 [![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml)
 [![Unit Tests](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml)
-[![Code Coverage](https://img.shields.io/badge/400%20test-93%25%20coverage-brightgreen)](https://github.com/gdraheim/docker-systemctl-replacement/blob/master/testsuite.py)
+[![Code Coverage](https://img.shields.io/badge/460%20test-90%25%20coverage-brightgreen)](https://github.com/gdraheim/docker-systemctl-replacement/blob/master/testsuite.py)
 [![PyPI version](https://badge.fury.io/py/docker-systemctl-replacement.svg)](https://pypi.org/project/docker-systemctl-replacement/)
 
 
 # docker systemctl replacement
 
-This script may be used to overwrite "/usr/bin/systemctl".   
+This script may be used to overwrite "/usr/bin/systemctl".
 It will execute the systemctl commands without SystemD!
 
 This is used to test deployment of services with a docker
