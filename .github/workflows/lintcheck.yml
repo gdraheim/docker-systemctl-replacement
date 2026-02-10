@@ -1,4 +1,4 @@
-name: pep8 style check
+name: lint style check
 
 on:
   push:
