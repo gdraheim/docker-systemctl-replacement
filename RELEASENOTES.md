@@ -3,6 +3,9 @@ RELEASE 1.7
 Python2 systemctl.py has been removed. If you need then use pip to
 install the pypi.org package which contains the python2 variant.
 
+The pypi and 'make ins' package can now called as module-tool,
+that is `python3.11 -m systemctl3` is now ready for use.
+
 The 1.7 branch does support AssertionX and ConditionX clauses in 
 unit descriptors. However the implementation is about the same 
 for both as systemctl3.py can not wait for condition to come true 
