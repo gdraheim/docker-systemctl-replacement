@@ -7,7 +7,7 @@ on:
     branches: [ develop, master ]
 
 jobs:
-  tests:
+  unittests:
     name: 'unit tests'
     runs-on: 'ubuntu-latest'
     steps:
