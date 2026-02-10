@@ -2,7 +2,7 @@ name: typehints check
 
 on:
   push:
-    branches: [ develop, master ]
+    branches: [ develop, v1.7 ]
   pull_request:
     branches: [ develop, master ]
   workflow_dispatch:
