@@ -28438,6 +28438,7 @@ if __name__ == "__main__":
             Runner = xmlrunner.XMLTestRunner
         result = Runner(logfile.stream, verbosity=opt.verbose).run(suite) # type: ignore[unused-ignore]
     if opt.coverage:
+        print("# please run:")
         print(" " + coverage_tool() + " combine")
         print(" " + coverage_tool() + " report " + _systemctl_py)
         print(" " + coverage_tool() + " annotate " + _systemctl_py)
