@@ -7576,11 +7576,12 @@ class SystemctlBaseTest(unittest.TestCase):
         service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
         systemctl = os.path.splitext(os.path.basename(_systemctl_py))[0]
+        logg.info("sys_path %s import %s << %s", systemctl_py_dir, systemctl, _systemctl_py)
         shell_file(unitconfparser_py, """
             #! {python_exe}
             from __future__ import print_function
             import sys
-            sys.path += [ "{systemctl_py_dir}" ]
+            sys.path = [ "{systemctl_py_dir}" ] + sys.path
             import {systemctl}
             data = {systemctl}.UnitConfParser({defaults})
             conf = {systemctl}.SystemctlConf(data)

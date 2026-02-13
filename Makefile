@@ -111,6 +111,8 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 # 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
 ESTCOVERAGE=--coverage --coverage
+st_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
@@ -256,8 +258,8 @@ coverage:
 	$(MAKE) $(COVERSRC)
 	touch $(COVERSRC)
 	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) && mv -v .coverage .coverage.0
-	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
-	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
+	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
+	[ "$(PYTHON3)" != "python3" ] || $(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
@@ -270,6 +272,7 @@ coveragetime mins:
 coverage0: ; $(PYTHON3) -m coverage run $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
+coverage9: ; $(MAKE) coverage PYTHON3=$(PYTHON39)
 
 # these should show different coverage percentage results
 coveragetest1: ; $(MAKE) coverage COVERAGETESTS=test_101*; 
