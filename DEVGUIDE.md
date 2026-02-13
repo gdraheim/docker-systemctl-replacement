@@ -124,8 +124,9 @@ examples in tests that are run by `testbuilds.py`.
 * `make install` # locally (shorthand `make ins`)
 * `make uninstall` # locally (shorthand `make uns`)
 * `make check` # combines unittests basetests dockertests
-  * `make basetests` # or just (`make base`)
-  * `make dockertests` # or just (`make docker`)
+  * `make functests` # or just (`make func`)
+  * `make exectests` # or just (`make exec`)
+  * `make docktests` # or just (`make dock`)
 * `make checkall` # dockertests with variants of image versions
 * `make package` # for pypi (shorthand `make pkg`)
 * `make coverage`

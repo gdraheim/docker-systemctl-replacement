@@ -44,10 +44,10 @@ help:
 
 FUNCTEST_PY = tests/functests.py
 FUNCTEST = $(PYTHON3) $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
+EXECTEST_PY = tests/exectests.py
+EXECTEST = $(PYTHON3) $(EXECTEST_PY) $(EXECTEST_OPTIONS)
 DOCKTEST_PY = tests/testsuite.py
 DOCKTEST = $(PYTHON3) $(DOCKTEST_PY) $(TESTS_OPTIONS)
-BASETEST_PY = tests/basetests.py
-BASETEST = $(PYTHON3) $(BASETEST_PY) $(BASETEST_OPTIONS)
 BUILD_PY = tests/buildtests.py
 BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
@@ -111,20 +111,20 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 # 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
 ESTCOVERAGE=--coverage --coverage
-est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 test_0%: ; $(FUNCTEST) "$(notdir $@)" $(VV) $V
-test_1%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
-test_2%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
-test_3%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
-test_4%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
-test_5%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
+test_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+test_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+test_3%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+test_4%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+test_5%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_8%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
@@ -144,58 +144,58 @@ t3 test3: ; $(MAKE) test_3*
 t4 test4: ; $(MAKE) test_4*
 t9 test9: ; $(MAKE) test_9*
 
-basetestlist = test_[1234]
-dockertestlist = test_[567]
-dockertestlist2 = st_[567]
+exectestlist = test_[1234]
+docktestlist = test_[567]
+docktestlist2 = st_[567]
 func functests: ; $(MAKE) "test_0*"
-base basetests: ; $(MAKE) test_1* test_2* test_3* test_4*
-docker dockertests: ; $(MAKE) test_5* test_6* test_7*
-15.6/tests:  ; $(MAKE) "15.6/$(dockertestslist)"
-15.5/tests:  ; $(MAKE) "15.5/$(dockertestlist)"
-15.4/tests:  ; $(MAKE) "15.4/$(dockertestlist)"
-15.2/tests:  ; $(MAKE) "15.2/$(dockertestlist)"
-15.1/tests:  ; $(MAKE) "15.1/$(dockertestlist)"
-15.0/tests:  ; $(MAKE) "15.0/$(dockertestlist)"
-42.3/tests:  ; $(MAKE) "42.3/$(dockertestlist)"
-42.2/tests:  ; $(MAKE) "42.2/$(dockertestlist)"
-22.04/tests: ; $(MAKE) "22.04/$(dockertestlist)"
-20.04/tests: ; $(MAKE) "20.04/$(dockertestlist)"
-19.10/tests: ; $(MAKE) "19.10/$(dockertestlist)"
-18.04/tests: ; $(MAKE) "18.04/$(dockertestlist)"
-16.04/tests: ; $(MAKE) "16.04/$(dockertestlist)"
-9.4/tests:   ; $(MAKE) "9.4/$(dockertestlist)"
-9.3/tests:   ; $(MAKE) "9.3/$(dockertestlist)"
-9.1/tests:   ; $(MAKE) "9.1/$(dockertestlist)"
-8.5/tests:   ; $(MAKE) "8.5/$(dockertestlist)"
-8.1/tests:   ; $(MAKE) "8.1/$(dockertestlist)"
-8.0/tests:   ; $(MAKE) "8.0/$(dockertestlist)"
-7.9/tests:   ; $(MAKE) "7.9/$(dockertestlist)"
-7.7/tests:   ; $(MAKE) "7.7/$(dockertestlist)"
-7.6/tests:   ; $(MAKE) "7.6/$(dockertestlist)"
-7.5/tests:   ; $(MAKE) "7.5/$(dockertestlist)"
-7.4/tests:   ; $(MAKE) "7.4/$(dockertestlist)"
-7.3/tests:   ; $(MAKE) "7.3/$(dockertestlist)"
+exec exectests: ; $(MAKE) test_1* test_2* test_3* test_4*
+dock docktests: ; $(MAKE) test_5* test_6* test_7*
+15.6/tests:  ; $(MAKE) "15.6/$(docktestlist)"
+15.5/tests:  ; $(MAKE) "15.5/$(docktestlist)"
+15.4/tests:  ; $(MAKE) "15.4/$(docktestlist)"
+15.2/tests:  ; $(MAKE) "15.2/$(docktestlist)"
+15.1/tests:  ; $(MAKE) "15.1/$(docktestlist)"
+15.0/tests:  ; $(MAKE) "15.0/$(docktestlist)"
+42.3/tests:  ; $(MAKE) "42.3/$(docktestlist)"
+42.2/tests:  ; $(MAKE) "42.2/$(docktestlist)"
+22.04/tests: ; $(MAKE) "22.04/$(docktestlist)"
+20.04/tests: ; $(MAKE) "20.04/$(docktestlist)"
+19.10/tests: ; $(MAKE) "19.10/$(docktestlist)"
+18.04/tests: ; $(MAKE) "18.04/$(docktestlist)"
+16.04/tests: ; $(MAKE) "16.04/$(docktestlist)"
+9.4/tests:   ; $(MAKE) "9.4/$(docktestlist)"
+9.3/tests:   ; $(MAKE) "9.3/$(docktestlist)"
+9.1/tests:   ; $(MAKE) "9.1/$(docktestlist)"
+8.5/tests:   ; $(MAKE) "8.5/$(docktestlist)"
+8.1/tests:   ; $(MAKE) "8.1/$(docktestlist)"
+8.0/tests:   ; $(MAKE) "8.0/$(docktestlist)"
+7.9/tests:   ; $(MAKE) "7.9/$(docktestlist)"
+7.7/tests:   ; $(MAKE) "7.7/$(docktestlist)"
+7.6/tests:   ; $(MAKE) "7.6/$(docktestlist)"
+7.5/tests:   ; $(MAKE) "7.5/$(docktestlist)"
+7.4/tests:   ; $(MAKE) "7.4/$(docktestlist)"
+7.3/tests:   ; $(MAKE) "7.3/$(docktestlist)"
 # python2 has been phased out by newer distros
-15.2/test2:  ; $(MAKE) "15.2/$(dockertestlist2)"
-15.1/test2:  ; $(MAKE) "15.1/$(dockertestlist2)"
-15.0/test2:  ; $(MAKE) "15.0/$(dockertestlist2)"
-42.3/test2:  ; $(MAKE) "42.3/$(dockertestlist2)"
-42.2/test2:  ; $(MAKE) "42.2/$(dockertestlist2)"
-22.04/test2: ; $(MAKE) "22.04/$(dockertestlist2)"
-20.04/test2: ; $(MAKE) "20.04/$(dockertestlist2)"
-18.04/test2: ; $(MAKE) "18.04/$(dockertestlist2)"
-16.04/test2: ; $(MAKE) "16.04/$(dockertestlist2)"
-8.5/test2:   ; $(MAKE) "8.5/$(dockertestlist2)"
-8.1/test2:   ; $(MAKE) "8.1/$(dockertestlist2)"
-8.0/test2:   ; $(MAKE) "8.0/$(dockertestlist2)"
-7.9/test2:   ; $(MAKE) "7.9/$(dockertestlist2)"
-7.7/test2:   ; $(MAKE) "7.7/$(dockertestlist2)"
-7.6/test2:   ; $(MAKE) "7.6/$(dockertestlist2)"
-7.5/test2:   ; $(MAKE) "7.5/$(dockertestlist2)"
-7.4/test2:   ; $(MAKE) "7.4/$(dockertestlist2)"
-7.3/test2:   ; $(MAKE) "7.3/$(dockertestlist2)"
+15.2/test2:  ; $(MAKE) "15.2/$(docktestlist2)"
+15.1/test2:  ; $(MAKE) "15.1/$(docktestlist2)"
+15.0/test2:  ; $(MAKE) "15.0/$(docktestlist2)"
+42.3/test2:  ; $(MAKE) "42.3/$(docktestlist2)"
+42.2/test2:  ; $(MAKE) "42.2/$(docktestlist2)"
+22.04/test2: ; $(MAKE) "22.04/$(docktestlist2)"
+20.04/test2: ; $(MAKE) "20.04/$(docktestlist2)"
+18.04/test2: ; $(MAKE) "18.04/$(docktestlist2)"
+16.04/test2: ; $(MAKE) "16.04/$(docktestlist2)"
+8.5/test2:   ; $(MAKE) "8.5/$(docktestlist2)"
+8.1/test2:   ; $(MAKE) "8.1/$(docktestlist2)"
+8.0/test2:   ; $(MAKE) "8.0/$(docktestlist2)"
+7.9/test2:   ; $(MAKE) "7.9/$(docktestlist2)"
+7.7/test2:   ; $(MAKE) "7.7/$(docktestlist2)"
+7.6/test2:   ; $(MAKE) "7.6/$(docktestlist2)"
+7.5/test2:   ; $(MAKE) "7.5/$(docktestlist2)"
+7.4/test2:   ; $(MAKE) "7.4/$(docktestlist2)"
+7.3/test2:   ; $(MAKE) "7.3/$(docktestlist2)"
 
-check: check2025
+check: functests exectests check2025
 	@ echo please run 'make checks' now
 25 check2025: ; $(DOCKTEST) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4
 24 check2024: ; $(DOCKTEST) $(VV) --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
@@ -255,7 +255,7 @@ coverage:
 	- rm .coverage*
 	$(MAKE) $(COVERSRC)
 	touch $(COVERSRC)
-	$(BASETEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
+	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
 	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
