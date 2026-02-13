@@ -275,7 +275,7 @@ def to_intN(value: Optional[str], default: Optional[int] = None) -> Optional[int
         return int(value)
     except ValueError:
         return default # pragma: no cover
-def to_int(value: str, default: int = 0) -> int:
+def to_int(value: Union[str, int], default: int = 0) -> int:
     try:
         return int(value)
     except ValueError:

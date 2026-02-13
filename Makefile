@@ -42,6 +42,8 @@ help:
 
 .PHONY: build tests src files notes tmp
 
+FUNCTEST_PY = tests/functests.py
+FUNCTEST = $(PYTHON3) $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
 DOCKTEST_PY = tests/testsuite.py
 DOCKTEST = $(PYTHON3) $(DOCKTEST_PY) $(TESTS_OPTIONS)
 BASETEST_PY = tests/basetests.py
@@ -117,6 +119,7 @@ est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(BASETEST) "t$(notdir $@)" $(VV) $V $(E
 est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+test_0%: ; $(FUNCTEST) "$(notdir $@)" $(VV) $V
 test_1%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
 test_2%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
 test_3%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
@@ -134,6 +137,7 @@ real_5%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_8%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
+t0 test0: ; $(MAKE) test_0*
 t1 test1: ; $(MAKE) test_1*
 t2 test2: ; $(MAKE) test_2*
 t3 test3: ; $(MAKE) test_3*
@@ -143,6 +147,7 @@ t9 test9: ; $(MAKE) test_9*
 basetestlist = test_[1234]
 dockertestlist = test_[567]
 dockertestlist2 = st_[567]
+func functests: ; $(MAKE) "test_0*"
 base basetests: ; $(MAKE) test_1* test_2* test_3* test_4*
 docker dockertests: ; $(MAKE) test_5* test_6* test_7*
 15.6/tests:  ; $(MAKE) "15.6/$(dockertestslist)"
