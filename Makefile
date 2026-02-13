@@ -42,11 +42,14 @@ help:
 
 .PHONY: build tests src files notes tmp
 
-TESTS_PY = tests/testsuite.py
-TESTS = $(PYTHON3) $(TESTS_PY) $(TESTS_OPTIONS)
+DOCKTEST_PY = tests/testsuite.py
+DOCKTEST = $(PYTHON3) $(DOCKTEST_PY) $(TESTS_OPTIONS)
+BASETEST_PY = tests/basetests.py
+BASETEST = $(PYTHON3) $(BASETEST_PY) $(BASETEST_OPTIONS)
 BUILD_PY = tests/buildtests.py
 BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
+TESTS = $(DOCKTEST)
 # python2 is not available on standard Linux distros after 2024 (so these are obsolete make targets)
 WITH2 = --python=/usr/bin/python2 --with=tmp/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
@@ -109,11 +112,11 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 COVERAGE=--coverage
 est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV)  $V --coverage --keep
 st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" $(VV) $V $(WITH2)
-test_1%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_2%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_4%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_5%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_1%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
+test_2%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
+test_3%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
+test_4%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
+test_5%: ; $(BASETEST) "$(notdir $@)" $(VV) $V
 test_6%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 test_7%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 test_8%: ; $(TESTS) "$(notdir $@)" $(VV) $V
@@ -236,13 +239,14 @@ checkall2018:
 	$(MAKE) -j1 15.0/test2 42.3/test2
 
 # with python2 being usually not available the coverage is actually just python3 tests now
+COVERAGETESTS = test
 COVERSRC=src/systemctl3.py
 coverage:
 	- rm .coverage*
 	$(MAKE) $(COVERSRC)
 	touch $(COVERSRC)
-	$(TESTS) $(VV) --coverage ${basetests} --with=$(COVERSRC)
-	$(TESTS) $(VV) --coverage ${dockertests} --with=$(COVERSRC)
+	$(BASETEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
+	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
@@ -253,6 +257,11 @@ coveragetime mins:
 	echo === $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
+
+# these should show different coverage percentage results
+coveragetest1: ; $(MAKE) coverage COVERAGETESTS=test_101*; 
+coveragetest2: ; $(MAKE) coverage COVERAGETESTS=test_5002
+coveragetest3: ; $(MAKE) coverage COVERAGETESTS=test_101*,test_5002
 
 tmp_ubuntu:
 	if docker ps | grep $(UBU); then : ; else : \

@@ -184,7 +184,7 @@ def python_package(python: str, image: Optional[str] = None) -> str:
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     image = image or IMAGE
     python = python or _python
-    if python.endswith("3"):
+    if "3" in python:
         return python + " -m coverage"
     else:
         if image and "centos:8" in image:
@@ -387,7 +387,7 @@ def get_LASTGROUP(root: bool = False) -> str:
 
 def beep() -> None:
     if os.name == "nt":
-        import winsound # type: ignore[import] # pylint: disable=import-error
+        import winsound # type: ignore[import,unused-ignore] # pylint: disable=import-error
         frequency = 2500
         duration = 1000
         winsound.Beep(frequency, duration) # type: ignore[attr-defined]
@@ -40533,16 +40533,18 @@ if __name__ == "__main__":
     suite = unittest.TestSuite()
     if not args: args = ["test_*"]
     for arg in args:
-        for classname in sorted(globals()):
-            if not classname.endswith("Test"):
-                continue
-            testclass = globals()[classname]
-            for method in sorted(dir(testclass)):
-                if "*" not in arg: arg += "*"
-                if len(arg) > 2 and arg[1] == "_":
-                    arg = "test" + arg[1:]
-                if fnmatch(method, arg):
-                    suite.addTest(testclass(method))
+        for testname in arg.split(","):
+            if not testname: continue
+            for classname in sorted(globals()):
+                if not classname.endswith("Test"):
+                    continue
+                testclass = globals()[classname]
+                for method in sorted(dir(testclass)):
+                    if "*" not in testname: testname += "*"
+                    if len(testname) > 2 and testname[1] == "_":
+                        testname = "test" + testname[1:]
+                    if fnmatch(method, testname):
+                        suite.addTest(testclass(method))
     # select runner
     xmlresults = None
     if opt.xmlresults:
@@ -40552,7 +40554,7 @@ if __name__ == "__main__":
         logg.info("xml results into %s", opt.xmlresults)
     if not logfile:
         if xmlresults:
-            import xmlrunner # type: ignore # pylint: disable=import-error
+            import xmlrunner # type: ignore[import,unused-ignore] # pylint: disable=import-error
             Runner = xmlrunner.XMLTestRunner
             result = Runner(xmlresults).run(suite)
         else:
@@ -40561,9 +40563,9 @@ if __name__ == "__main__":
     else:
         Runner = unittest.TextTestRunner
         if xmlresults:
-            import xmlrunner # type: ignore # pylint: disable=import-error
+            import xmlrunner # type: ignore[import,unused-ignore] # pylint: disable=import-error
             Runner = xmlrunner.XMLTestRunner
-        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite) # type: ignore
+        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite) # type: ignore[unused-ignore]
     if opt.coverage:
         print(" " + coverage_tool() + " combine")
         print(" " + coverage_tool() + " report " + _systemctl_py)
