@@ -13,7 +13,7 @@ PYTHON39 = python$(PY39)
 PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
 GIT=git
-VERFILES = files/docker/systemctl3.py tests/testsuite.py pyproject.toml
+VERFILES = files/docker/systemctl3.py tests/*tests.py pyproject.toml
 VV=-vv
 
 verfiles:
@@ -46,7 +46,7 @@ FUNCTEST_PY = tests/functests.py
 FUNCTEST = $(PYTHON3) $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
 EXECTEST_PY = tests/exectests.py
 EXECTEST = $(PYTHON3) $(EXECTEST_PY) $(EXECTEST_OPTIONS)
-DOCKTEST_PY = tests/testsuite.py
+DOCKTEST_PY = tests/docktests.py
 DOCKTEST = $(PYTHON3) $(DOCKTEST_PY) $(TESTS_OPTIONS)
 BUILD_PY = tests/buildtests.py
 BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
@@ -255,6 +255,7 @@ coverage:
 	- rm .coverage*
 	$(MAKE) $(COVERSRC)
 	touch $(COVERSRC)
+	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) && mv -v .coverage .coverage.0
 	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
 	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC)
 	$(PYTHON3) -m coverage combine && \
@@ -263,8 +264,10 @@ coverage:
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
 	ls -l $(COVERSRC),cover
 	@ echo = $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+	@ echo = $$(grep "def test_" $(FUNCTEST_PY) $(EXECTEST_PY) $(DOCKTEST_PY) | wc -l) "tests"
 coveragetime mins:
 	echo === $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
+coverage0: ; $(PYTHON3) -m coverage run $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
 
@@ -272,6 +275,8 @@ coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
 coveragetest1: ; $(MAKE) coverage COVERAGETESTS=test_101*; 
 coveragetest2: ; $(MAKE) coverage COVERAGETESTS=test_5002
 coveragetest3: ; $(MAKE) coverage COVERAGETESTS=test_101*,test_5002
+coveragetests:
+	@ echo === $$(grep "def test_" $(FUNCTEST_PY) $(EXECTEST_PY) $(DOCKTEST_PY) | wc -l) "tests"
 
 tmp_ubuntu:
 	if docker ps | grep $(UBU); then : ; else : \
@@ -280,7 +285,7 @@ tmp_ubuntu:
 	; docker exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
 	; fi
 	docker cp files $(UBU):/root/
-	docker cp tests/testsuite.py $(UBU):/root/ 
+	docker cp tests/*tests.py $(UBU):/root/
 	docker cp tests/reply.py $(UBU):/root/ 
 UBU=test_ubuntu
 ubu/test_%:

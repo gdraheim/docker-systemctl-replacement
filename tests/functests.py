@@ -14,16 +14,58 @@ from fnmatch import fnmatchcase as fnmatch
 
 logg = logging.getLogger(os.path.basename(__file__))
 
-TMPSYSTEMCTL = os.environ.get("TMPSYSTEMCTL", "")
-
-sys.path = [os.curdir] + sys.path
-if not TMPSYSTEMCTL:
-    from files.docker import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
-else:
-    from tmp import systemctl as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
-
+SYSTEMCTL = "files/docker/systemctl3.py"
 TODO = 0
 VV = "-vv"
+
+if __name__ == "__main__":
+    # unittest.main()
+    from optparse import OptionParser  # pylint: disable=deprecated-module
+    cmdline = OptionParser("%prog [options] test*",
+                      epilog=__doc__.strip().split("\n", 1)[0])
+    cmdline.add_option("-v", "--verbose", action="count", default=0,
+                  help="increase logging level [%default]")
+    cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
+                  help="additionally save the output log to a file [%default]")
+    cmdline.add_option("--todo", action="count", default=TODO,
+                  help="show when an alternative outcome is desired [%default]")
+    cmdline.add_option("--failfast", action="store_true", default=False,
+                  help="Stop the test run on the first error or failure. [%default]")
+    cmdline.add_option("--xmlresults", metavar="FILE", default=None,
+                  help="capture results as a junit xml file [%default]")
+    cmdline.add_option("--with", "--systemctl", dest="systemctl", metavar="PY", default=SYSTEMCTL)
+    opt, cmdline_args = cmdline.parse_args()
+    logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    TODO = opt.todo
+    SYSTEMCTL = opt.systemctl
+    VV = "-v" + ("v" * opt.verbose)
+    logfile = None
+    if opt.logfile:
+        if os.path.exists(opt.logfile):
+            os.remove(opt.logfile)
+        logfile = logging.FileHandler(opt.logfile)
+        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        logging.getLogger().addHandler(logfile)
+        logg.info("log diverted to %s", opt.logfile)
+
+logg.warning("importing %s", SYSTEMCTL)
+if "files/docker/systemctl3" in SYSTEMCTL:
+    sys.path = [os.curdir] + sys.path
+    from files.docker import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
+elif "src/systemctl3" in SYSTEMCTL:
+    sys.path = [os.curdir] + sys.path
+    from src import systemctl3 as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+elif "src/systemctl" in SYSTEMCTL:
+    sys.path = [os.curdir] + sys.path
+    from src import systemctl as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+elif "tmp/systemctl3" in SYSTEMCTL:
+    sys.path = [os.curdir] + sys.path
+    from tmp import systemctl3 as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+elif "tmp/systemctl" in SYSTEMCTL:
+    sys.path = [os.curdir] + sys.path
+    from tmp import systemctl as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+else:
+    raise ImportError(F"unknown src location {SYSTEMCTL}")
 
 class AppUnitTest(unittest.TestCase):
     def test_0100(self) -> None:
@@ -237,33 +279,6 @@ class AppUnitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     # unittest.main()
-    from optparse import OptionParser  # pylint: disable=deprecated-module
-    cmdline = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n", 1)[0])
-    cmdline.add_option("-v", "--verbose", action="count", default=0,
-                  help="increase logging level [%default]")
-    cmdline.add_option("-l", "--logfile", metavar="FILE", default="",
-                  help="additionally save the output log to a file [%default]")
-    cmdline.add_option("--todo", action="count", default=TODO,
-                  help="show when an alternative outcome is desired [%default]")
-    cmdline.add_option("--failfast", action="store_true", default=False,
-                  help="Stop the test run on the first error or failure. [%default]")
-    cmdline.add_option("--xmlresults", metavar="FILE", default=None,
-                  help="capture results as a junit xml file [%default]")
-    opt, cmdline_args = cmdline.parse_args()
-    logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
-    TODO = opt.todo
-    VV = "-v" + ("v" * opt.verbose)
-    logfile = None
-    if opt.logfile:
-        if os.path.exists(opt.logfile):
-            os.remove(opt.logfile)
-        logfile = logging.FileHandler(opt.logfile)
-        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
-        logging.getLogger().addHandler(logfile)
-        logg.info("log diverted to %s", opt.logfile)
-    #
-    # unittest.main()
     suite = unittest.TestSuite()
     if not cmdline_args:
         cmdline_args = ["test_*"]
@@ -304,4 +319,3 @@ if __name__ == "__main__":
         testresult = TestRunner(logfile.stream, verbosity=opt.verbose).run(suite) # type: ignore[import-error,unused-ignore]
     if not testresult.wasSuccessful():
         sys.exit(1)
-        
