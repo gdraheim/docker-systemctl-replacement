@@ -547,7 +547,7 @@ class SystemctlBaseTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if fnmatch(cmd, "*"+name+"*")]
                         if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGINT)
@@ -566,7 +566,7 @@ class SystemctlBaseTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if fnmatch(cmd, "*"+name+"*")]
                         if found: continue
                         remaining += 1
                 except IOError as e:
@@ -587,7 +587,7 @@ class SystemctlBaseTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if fnmatch(cmd, "*"+name+"*")]
                         if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGKILL)
@@ -598,7 +598,7 @@ class SystemctlBaseTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
     def rm_killall(self, testname: Optional[str] = None) -> None:
-        self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
+        self.killall("*systemctl*.py *", 10, but = ["edit ", "tests.py"])
         testname = testname or self.caller_testname()
         self.killall("*/{testname}_*".format(**locals()))
     def kill(self, pid: Union[str, int], wait: Optional[int] = None, sig: Optional[int] = None) -> bool:
