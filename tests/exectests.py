@@ -13379,8 +13379,9 @@ class SystemctlBaseTest(unittest.TestCase):
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        logg.info(" %s =>%s (stop)\n%s", cmd, end, out)
+        if not COVERAGE:
+            self.assertEqual(end, 0)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
