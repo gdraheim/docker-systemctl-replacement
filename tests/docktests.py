@@ -14,7 +14,7 @@ __version__ = "1.7.1064"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Tuple, Generator, Union, Optional, TextIO
+from typing import List, Tuple, Iterator, Iterable, Union, Optional, TextIO
 
 import subprocess
 import os
@@ -180,7 +180,7 @@ def python_package(python: str, image: Optional[str] = None) -> str:
         if image and "ubuntu:2" in image:
             return package
         return package[:-1]
-    if "opensuse" in image:
+    if image and "opensuse" in image:
         return package.replace(".", "")
     return package
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
@@ -272,42 +272,50 @@ def background(cmd: str, shell: bool = True) -> BackgroundProcess:
 
 def reads(filename: str) -> str:
     return decodes(open(filename, "rb").read())
-def _lines(lines: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
+def _lines(lines: Union[str, Iterable[str], TextIO]) -> List[str]:
     if isinstance(lines, string_types):
         lines = decodes(lines).split("\n")
         if len(lines) and lines[-1] == "":
             lines = lines[:-1]
     return list(lines)
-def lines(text: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
+def lines(text: Union[str, Iterable[str], TextIO]) -> List[str]:
     lines = []
     for line in _lines(text):
         lines.append(line.rstrip())
     return lines
-def each_grep(pattern: str, lines: Union[str, List[str], TextIO]) -> Generator[str, None, None]:
+def each_grep(pattern: str, lines: Union[str, Iterable[str], TextIO]) -> Iterator[str]:
     for line in _lines(lines):
         if re.search(pattern, line.rstrip()):
             yield line.rstrip()
-def grep(pattern: str, lines: Union[str, List[str], TextIO]) -> List[str]:
+def grep(pattern: str, lines: Union[str, Iterable[str], TextIO]) -> List[str]:
     return list(each_grep(pattern, lines))
-def greps(lines: Union[str, List[str], TextIO], pattern: str) -> List[str]:
+def greps(lines: Union[str, Iterable[str], TextIO], pattern: str) -> List[str]:
     return list(each_grep(pattern, lines))
+def topgreps(lines: Union[str, Iterable[str], TextIO], pattern: str) -> List[str]:
+    return greps(each_non_defunct(lines), pattern)
+def topstr(lines: Union[str, Iterable[str]]) -> str:
+    return "\n".join(each_non_runuser(lines))
 def running(lines: Union[str, List[str]]) -> List[str]:
     return list(each_non_runuser(each_non_defunct(lines)))
-def each_non_defunct(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
+def each_non_defunct(lines: Union[str, Iterable[str]]) -> Iterator[str]:
     for line in _lines(lines):
         if '<defunct>' in line:
             continue
         yield line
-def each_non_runuser(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
+def each_non_runuser(lines: Union[str, Iterable[str]]) -> Iterator[str]:
     for line in _lines(lines):
         if 'runuser -u' in line:
             continue
+        if "[gpg" in line:
+            continue
         yield line
-def each_clean(lines: Union[str, List[str]]) -> Generator[str, None, None]:
+def each_clean(lines: Union[str, Iterable[str]]) -> Iterator[str]:
     for line in _lines(lines):
         if '<defunct>' in line:
             continue
         if 'runuser -u' in line:
+            continue
+        if "[gpg" in line:
             continue
         if 'ps -eo pid,' in line:
             continue
@@ -717,7 +725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def makedirs(self, path: str) -> None:
         if not os.path.isdir(path):
             os.makedirs(path)
-    def real_folders(self) -> Generator[str, None, None]:
+    def real_folders(self) -> Iterator[str]:
         yield "/etc/systemd/system"
         yield "/var/run/systemd/system"
         yield "/usr/lib/systemd/system"
@@ -7766,7 +7774,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl default-services -vv"
         # sh____(cmd.format(**locals()))
         out = output(cmd.format(**locals()))
-        logg.info("\n>\n%s", out)
+        logg.info("\n>\n%s", topstr(out))
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
@@ -7774,14 +7782,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} ps -eo pid,ppid,user,args"
         top = output(cmd.format(**locals()))
-        logg.info("\n>>>\n%s", top)
+        logg.info("\n>>>\n%s", topstr(top))
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "{docker} exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} ps -eo pid,ppid,user,args"
         top = output(cmd.format(**locals()))
-        logg.info("\n>>>\n%s", top)
+        logg.info("\n>>>\n%s", topstr(top))
         self.assertFalse(running(greps(top, "testsleep")))
         #
         self.save_coverage(testname)
