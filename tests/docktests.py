@@ -999,6 +999,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}" # <<<< like here
             sx____(cmd.format(**locals()))
@@ -1053,6 +1056,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -1121,6 +1127,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -1274,6 +1283,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -1697,6 +1709,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -2073,6 +2088,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -2463,6 +2481,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -2766,7 +2787,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         package = package_tool(image)
         refresh = refresh_tool(image)
-        sometime = SOMETIME or 388
+        sometime = SOMETIME or 588
         quick = QUICK
         #
         user = self.user()
@@ -2808,6 +2829,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -3075,6 +3099,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -3358,6 +3385,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -3680,6 +3710,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -4011,6 +4044,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -4225,6 +4261,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -4664,6 +4703,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -5057,6 +5099,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -5466,6 +5511,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -5827,6 +5875,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -6111,6 +6162,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -6425,6 +6479,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -6577,6 +6634,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -6792,6 +6852,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7017,6 +7080,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7251,6 +7317,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7439,6 +7508,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7620,6 +7692,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7755,6 +7830,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7834,6 +7912,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -7933,6 +8014,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8033,6 +8117,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8121,6 +8208,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8209,6 +8299,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8310,6 +8403,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8432,6 +8528,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8538,6 +8637,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8645,6 +8747,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8784,6 +8889,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -8974,6 +9082,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9067,6 +9178,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9155,6 +9269,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9245,6 +9362,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9334,6 +9454,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9423,6 +9546,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9513,6 +9639,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9605,6 +9734,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9696,6 +9828,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9786,6 +9921,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9881,6 +10019,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -9971,6 +10112,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10063,6 +10207,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10154,6 +10301,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10245,6 +10395,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10337,6 +10490,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10431,6 +10587,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10524,6 +10683,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
@@ -10623,6 +10785,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -10731,6 +10896,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -10836,6 +11004,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -10979,6 +11150,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11127,6 +11301,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11265,6 +11442,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11414,6 +11594,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11540,6 +11723,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11699,6 +11885,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11819,6 +12008,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11915,7 +12107,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
             if SKIP: self.skipTest("centos-based test")
         if "python3" in _python and "centos:7" in image:
@@ -11942,6 +12134,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -11984,7 +12179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos:7" not in image:
             if SKIP: self.skipTest("centos:7 based test")
         if "python3" in _python and "centos:7" in image:
@@ -12013,6 +12208,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12092,8 +12290,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-        sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12151,6 +12350,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable httpd"
@@ -12241,6 +12443,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y apache2"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12313,6 +12518,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12399,6 +12607,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y mariadb"
         sh____(cmd.format(**locals()))
         if False:
@@ -12472,6 +12683,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y rsyslog"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
@@ -12529,6 +12743,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable httpd"
@@ -12623,6 +12840,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y nginx"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable nginx"
@@ -12705,6 +12925,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
+        if "python3" in python and python != "python3":
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
         ## container = ip_container(testname)
