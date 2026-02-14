@@ -113,7 +113,11 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 ESTCOVERAGE=--coverage --coverage
 st_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
