@@ -113,6 +113,7 @@ t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 ESTCOVERAGE=--coverage --coverage
 st_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
@@ -259,7 +260,7 @@ coverage:
 	touch $(COVERSRC)
 	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) && mv -v .coverage .coverage.0
 	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
-	[ "$(PYTHON3)" != "python3" ] || $(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
+	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
 	$(PYTHON3) -m coverage combine && \
 	$(PYTHON3) -m coverage report && \
 	$(PYTHON3) -m coverage annotate
