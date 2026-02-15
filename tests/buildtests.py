@@ -869,7 +869,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9144_apache2_opensuse15_dockerfile(self) -> None:
+    def test_9142_apache2_opensuse15_py2_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -889,7 +889,7 @@ class DockerBuildTest(unittest.TestCase):
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
-        name = "apache2-opensuse-15"
+        name = "apache2-opensuse15-py2"
         dockerfile = F"{name}.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
@@ -897,13 +897,13 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         nocache = NOCACHE
         python1 = "python" if "python2" in python else os.path.basename(python)
-        python2 = python_package(python, dockerfile)
+        pythonpkg = python_package(python, dockerfile)
         if not _python:
-            logg.info("python1 %s python2 %s", python1, python2)
+            logg.info("python1 %s pythonpkg %s", python1, pythonpkg)
             # assert python1 == "python"
             # assert python2 == "python2"
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHON2={python2}"
+        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHONPKG={pythonpkg}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -929,7 +929,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9145_apache2_opensuse15_dockerfile(self) -> None:
+    def test_9143_apache2_opensuse15_dockerfile(self) -> None:
+        self.test_9145_apache2_opensuse15_dockerfile("python3.11")
+    def test_9145_apache2_opensuse15_dockerfile(self, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -945,7 +947,7 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         latest = LATEST or os.path.basename(python)
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         testname = self.testname()
@@ -957,9 +959,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         nocache = NOCACHE
-        python3 = python_package(python, dockerfile)
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHON3={python3}"
+        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHONPKG={pythonpkg}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))

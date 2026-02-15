@@ -135,7 +135,7 @@ test_5%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_8%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
-test_9%: ; $(BUILD) "$(notdir $@)" $(VV) $V
+test_9%: ; $(MAKE) src/systemctl.py; $(BUILD) "$(notdir $@)" $(VV) $V --systemctl=src/systemctl.py
 real_1%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_2%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_3%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
