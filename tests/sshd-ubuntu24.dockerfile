@@ -3,12 +3,14 @@ FROM ubuntu:24.04
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
 ARG PASS=P@ssw0rd.9d82fd2c7c83afb7d69213088203b6c6e402da0
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
 EXPOSE 22
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y python3
-COPY tmp/systemctl3.py /usr/bin/systemctl
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ${PYTHONPKG}
 
+COPY tmp/systemctl3.py /usr/bin/systemctl
 # RUN apt-get install -y passwd
 # RUN apt-cache search sshd
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
