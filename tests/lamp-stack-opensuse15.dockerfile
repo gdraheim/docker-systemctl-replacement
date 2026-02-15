@@ -18,6 +18,7 @@ EXPOSE 80
 RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG}
+RUN ls -l /usr/bin/python3 || ln -sv "${PYTHON}" /usr/bin/python3
 RUN zypper $GPG install -r repo-oss -y apache2 apache2-utils mariadb-server mariadb-tools 
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y php7 php7-mysql apache2-mod_php7 phpMyAdmin

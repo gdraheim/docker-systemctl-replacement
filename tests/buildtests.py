@@ -2600,7 +2600,10 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9945_sshd_opensuse15_dockerfile(self) -> None:
+    def test_9943_sshd_opensuse15_dockerfile(self) -> None:
+        testname = self.testname()
+        self.test_9945_sshd_opensuse15_dockerfile("python3.11", testname)
+    def test_9945_sshd_opensuse15_dockerfile(self, python: str = NIX, testname: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2612,20 +2615,22 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname or self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-opensuse15.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        pythonpkg = python_package(python, dockerfile)
         psql = PSQL_TOOL
-        password = self.newpassword()
+        username = "testuser"
+        userpass = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg USERPASS={userpass} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHONPKG={pythonpkg}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2649,12 +2654,12 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         v=F"{_verbose}"
         allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
-        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        cmd = "sshpass -p {userpass} scp {v} {allows} {username}@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
-        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        cmd = "sshpass -p {userpass} scp {v} {allows} {username}@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
