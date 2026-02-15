@@ -7,19 +7,18 @@ FROM almalinux:9.4
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
 
-ARG PYTHON_EXE=/usr/libexec/platform-python
-ENV PYTHON_EXE ${PYTHON_EXE} 
-ENV SSL --setopt sslverify=false
-ENV GPG --nogpgcheck
-
-ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
-ENV INC_CONF="/usr/share/phpmyadmin/config.inc.php"
-ENV INDEX_PHP="/var/www/html/index.php"
 ARG USERNAME=testuser_ok
-ARG PASSWORD=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba598gsdrd
+ARG USERPASS=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba598gsdrd
 ARG TESTPASS=P@ssw0rd.UQN2pMWSUbl4gQU.P5hvJuOhjx.s90b4qCnG2idtc30.
 ARG LISTEN=172.0.0.0/8
 ARG VER=4.9.7
+ARG PYTHON_EXE=/usr/libexec/platform-python
+ENV PYTHON_EXE="${PYTHON_EXE}"
+ENV SSL="--setopt sslverify=false"
+ENV GPG="--nogpgcheck"
+ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
+ENV INC_CONF="/usr/share/phpmyadmin/config.inc.php"
+ENV INDEX_PHP="/var/www/html/index.php"
 EXPOSE 80
 
 COPY tmp/systemctl3.py /usr/bin/systemctl
@@ -40,7 +39,7 @@ RUN mkdir /etc/systemd/system/mariadb.service.d ; \
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
 RUN systemctl start mariadb -vvv \
   ; mysqladmin -uroot password ${TESTPASS} \
-  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${PASSWORD}'" | mysql -uroot -p${TESTPASS} \
+  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${USERPASS}'" | mysql -uroot -p${TESTPASS} \
   ; systemctl stop mariadb -vvv 
 
 # phpMyAdmin the hard way

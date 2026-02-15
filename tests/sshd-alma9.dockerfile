@@ -2,12 +2,13 @@ FROM almalinux:9.4
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+
 ARG PASS=P@ssw0rd.788daa5d938373fe628f1dbe8d0c319c5606c4d3e857eb7
-EXPOSE 22
 ARG PYTHON_EXE=/usr/libexec/platform-python
 ENV PYTHON_EXE=${PYTHON_EXE}
 ENV SSL="--setopt sslverify=false"
 ENV GPG="--nogpgcheck"
+EXPOSE 22
 
 # RUN yum install -y epel-release
 RUN yum install $GPG $SSL -y passwd

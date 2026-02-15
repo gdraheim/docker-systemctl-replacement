@@ -6,11 +6,11 @@ FROM almalinux:9.4
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
-EXPOSE 8080
 ARG PYTHON_EXE=/usr/libexec/platform-python
-ENV PYTHON_EXE ${PYTHON_EXE}
-ENV SSL --setopt sslverify=false
-ENV GPG --nogpgcheck
+ENV PYTHON_EXE="${PYTHON_EXE}"
+ENV SSL="--setopt sslverify=false"
+ENV GPG="--nogpgcheck"
+EXPOSE 8080
 
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN sed -i -e "s|/usr/bin/env python.*|${PYTHON_EXE}|" /usr/bin/systemctl
