@@ -2,10 +2,14 @@ FROM ubuntu:18.04
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
 EXPOSE 27017
 
-RUN apt-get update
-RUN apt-get install -y python3 procps
+RUN echo ==== PYTHONPKG=${PYTHONPKG}
+RUN apt-get update && apt-get install -y ${PYTHONPKG} procps
+RUN test -s /usr/bin/python3 || ln -sv ${PYTHON} /usr/bin/python3
+
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 
