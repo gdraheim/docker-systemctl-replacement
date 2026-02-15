@@ -930,9 +930,8 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9143_apache2_opensuse15_dockerfile(self) -> None:
-        testname = self.testname()
-        self.test_9145_apache2_opensuse15_dockerfile("python3.11", testname)
-    def test_9145_apache2_opensuse15_dockerfile(self, python: str = NIX, testname: str = NIX) -> None:
+        self.test_9145_apache2_opensuse15_dockerfile(self.testname(), "python3.11")
+    def test_9145_apache2_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -988,7 +987,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir(testname)
-    def test_9195_nginx_opensuse15_dockerfile(self) -> None:
+    def test_9193_nginx_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
+        self.test_9195_nginx_opensuse15_dockerfile(self.testname(), "python3.11")
+    def test_9195_nginx_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an NGINX HTTP service 
                  being installed and enabled.
@@ -1004,18 +1005,19 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname or self.testname()
         testdir = self.testdir()
         dockerfile = "nginx-opensuse15.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHONPKG={pythonpkg}  --build-arg PYTHON={python}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2023,7 +2025,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9445_mongod_opensuse15_dockerfile(self) -> None:
+    def test_9445_mongod_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
             check that mongo can reply witha  hostInfo."""
         systemctl = tmp_systemctl3()
@@ -2032,19 +2034,20 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname = self.testname()
         testdir = self.testdir()
         dockerfile = "mongod-opensuse15.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        pythonpkg = python_package(python, dockerfile)
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHONPKG={pythonpkg} --build-arg PYTHON={python}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -2160,9 +2163,8 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9743_lamp_stack_opensuse15_php7(self) -> None:
-        testname = self.testname()
-        self.test_9745_lamp_stack_opensuse15_php7("python3.11", testname)
-    def test_9745_lamp_stack_opensuse15_php7(self, python: str = NIX, testname: str = NIX) -> None:
+        self.test_9745_lamp_stack_opensuse15_php7(self.testname(), "python3.11")
+    def test_9745_lamp_stack_opensuse15_php7(self, testname: str = NIX, python: str = NIX) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         systemctl = tmp_systemctl3()
         if not systemctl: self.skipTest("no python3 systemctl.py")
@@ -2601,9 +2603,8 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9943_sshd_opensuse15_dockerfile(self) -> None:
-        testname = self.testname()
-        self.test_9945_sshd_opensuse15_dockerfile("python3.11", testname)
-    def test_9945_sshd_opensuse15_dockerfile(self, python: str = NIX, testname: str = NIX) -> None:
+        self.test_9945_sshd_opensuse15_dockerfile(self.testname(), "python3.11")
+    def test_9945_sshd_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.

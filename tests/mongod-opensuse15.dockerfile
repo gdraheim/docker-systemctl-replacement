@@ -2,12 +2,17 @@ FROM opensuse/leap:15.6
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
+ENV GPG="--no-gpg-checks"
 EXPOSE 27017
-ENV GPG --no-gpg-checks
 
-RUN zypper $GPG install -r repo-oss -y python3 procps
+RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
+RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG} procps
+RUN test -s /usr/bin/python3 || ln -sv "${PYTHON}" /usr/bin/python3
 COPY tmp/systemctl3.py /usr/bin/systemctl
 
+# mongodb pulls in python3-base anyway
 RUN zypper addrepo "https://repo.mongodb.org/zypper/suse/15/mongodb-org/4.4/x86_64/" mongodb
 RUN zypper $GPG install -y mongodb-org
 COPY tmp/systemctl3.py /usr/bin/systemctl
