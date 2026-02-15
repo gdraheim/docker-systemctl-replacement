@@ -226,8 +226,8 @@ ubuntu:22.04 (2022.04) EOL 2025 (LTS 2027-04)
 * python2 = does not setup 'python'
 * python3 : apt-get install -y python3 (3.10.6)
 * python3 = python3.10 # does not setup 'python' (python3 installs package 'python3.10')
-* python311 : apt-get install -y python3.11 (3.11.0)
-* python311 = python3.11 # does not setup 'python' nor 'python3'
+* python3.11 : apt-get install -y python3.11 (3.11.0)
+* python3.11 = python3.11 # does not setup 'python' nor 'python3'
 
 ubuntu:24.04 (2024.04) EOL 2027 (LTS 2029-04)
 * apt is binary

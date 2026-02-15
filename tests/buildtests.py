@@ -665,7 +665,7 @@ class DockerBuildTest(unittest.TestCase):
         python = _python or _python2
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile = "apache2-ubuntu-16.dockerfile"
+        dockerfile = "apache2-ubuntu16-py2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -724,6 +724,7 @@ class DockerBuildTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = _python or _python3
+        python1 = os.path.basename(python)
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         dockerfile = "apache2-ubuntu18.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -758,7 +759,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9121_apache2_ubuntu22(self) -> None:
+    def test_9120_apache2_ubuntu22(self) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 22 with python2
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -777,7 +778,7 @@ class DockerBuildTest(unittest.TestCase):
         python = _python or _python2
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile = "apache2-ubuntu-22.dockerfile"
+        dockerfile = "apache2-ubuntu22-py2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -816,7 +817,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9122_apache2_ubuntu22(self) -> None:
+    def test_9121_apache2_ubuntu22(self) -> None:
+        self.test_9122_apache2_ubuntu22(self.testname(), "python3.11")
+    def test_9122_apache2_ubuntu22(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd enabled Ubuntu 22 with python3
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -832,9 +835,10 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
+        python1 = os.path.basename(python)
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        testname = self.testname()
+        testname = testname or self.testname()
         testdir = self.testdir()
         dockerfile = "apache2-ubuntu22.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -843,7 +847,7 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         latest = LATEST or os.path.basename(python)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))

@@ -2,10 +2,13 @@ FROM ubuntu:18.04
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
 EXPOSE 80
 
 RUN apt-get update
-RUN apt-get install -y apache2 python3
+RUN apt-get install -y apache2 ${PYTHONPKG}}
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 

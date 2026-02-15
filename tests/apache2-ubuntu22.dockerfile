@@ -2,10 +2,14 @@ FROM ubuntu:22.04
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
 EXPOSE 80
 
-RUN apt-get update
-RUN apt-get install -y apache2 python3
+RUN echo ==== PYTHONPKG=${PYTHONPKG}
+RUN apt-get update && apt-get install -y apache2 ${PYTHONPKG}
+RUN test -s /usr/bin/python3 || ln -sv ${PYTHON} /usr/bin/python3
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN test -e /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 
