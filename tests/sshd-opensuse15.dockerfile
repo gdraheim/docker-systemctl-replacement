@@ -12,6 +12,7 @@ EXPOSE 22
 RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG} procps
 RUN ls -l /usr/bin/python3 || ln -sv "${PYTHON}" /usr/bin/python3
+
 COPY tmp/systemctl3.py /usr/bin/systemctl
 # RUN zypper $GPG search ssh
 RUN zypper $GPG install -r repo-oss -y openssh

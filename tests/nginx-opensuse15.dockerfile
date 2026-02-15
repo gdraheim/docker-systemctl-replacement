@@ -10,6 +10,7 @@ EXPOSE 80
 RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG}
 RUN test -s /usr/bin/python3 || ln -sv "${PYTHON}" /usr/bin/python3
+
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y nginx 
 COPY tmp/systemctl3.py /usr/bin/systemctl

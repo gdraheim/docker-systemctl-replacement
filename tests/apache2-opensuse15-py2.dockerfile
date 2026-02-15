@@ -14,6 +14,7 @@ ENV GPG="--no-gpg-checks"
 RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 RUN [ -z "$FRESH" ] || zypper $GPG refresh repo-oss
 RUN zypper $GPG $FRESH install -y ${PYTHONPKG}
+
 COPY tmp/systemctl.py /usr/bin/systemctl.py
 RUN sed -i -e "s:/usr/bin/env python.*:/usr/bin/env ${PYTHON}:" /usr/bin/systemctl.py
 RUN head -1 /usr/bin/systemctl.py

@@ -2,11 +2,16 @@ FROM opensuse/leap:15.6
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
+ARG PYTHON=python3
+ARG PYTHONPKG=${PYTHON}
+ARG USERPASS P@assw0rd.Redis.1
+ENV GPG="--no-gpg-checks"
 EXPOSE 6379
-ENV GPG --no-gpg-checks
-ARG PASSWORD Redis.Foo.1
 
-RUN zypper $GPG install -r repo-oss -y python3 procps
+RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
+RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG} procps
+RUN test -s /usr/bin/python3 || ln -sv "${PYTHON}" /usr/bin/python3
+
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y redis
 COPY tmp/systemctl3.py /usr/bin/systemctl
@@ -19,7 +24,7 @@ RUN runuser -u redis -- touch /var/log/redis/default.log
 
 RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 # default was 'bind 127.0.0.1'
-RUN sed -i "s/^..requirepass foo.*/requirepass $PASSWORD/" /etc/redis/default.conf
+RUN sed -i "s/^..requirepass foo.*/requirepass $USERPASS/" /etc/redis/default.conf
 
 RUN systemctl enable redis@default
 RUN systemctl disable kbdsettings || true

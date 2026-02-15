@@ -1227,7 +1227,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9245_postgres_opensuse15_dockerfile(self) -> None:
+    def test_9243_postgres_opensuse15_dockerfile(self) -> None:
+        self.test_9245_postgres_opensuse15_dockerfile(self.testname(), "python3.11")
+    def test_9245_postgres_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1244,10 +1246,10 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname or self.testname()
         testdir = self.testdir()
         dockerfile = "postgres-opensuse15.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -1255,10 +1257,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
-        testpass = "Pass." + password
+        userpass = self.newpassword()
+        testpass = "Pass." + userpass
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts}  --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass} --build-arg TESTPASS={testpass} --build-arg PYTHONPKG={pythonpkg} --build-arg PYTHON={python}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1650,7 +1653,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9345_redis_opensuse15_dockerfile(self) -> None:
+    def test_9343_redis_opensuse15_dockerfile(self) -> None:
+        self.test_9345_redis_opensuse15_dockerfile(self.testname(), "python3.11")
+    def test_9345_redis_opensuse15_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1659,10 +1664,10 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-opensuse15.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -1670,9 +1675,10 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
+        userpass = self.newpassword()
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass} --build-arg PYTHONPKG={pythonpkg} --build-arg PYTHON={python}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1691,7 +1697,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {userpass} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
@@ -1877,7 +1883,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9385_redis_opensuse15_user_dockerfile(self) -> None:
+    def test_9383_redis_opensuse15_user_dockerfile(self) -> None:
+        self.test_9385_redis_opensuse15_user_dockerfile(self.testname(), "python3.11")
+    def test_9385_redis_opensuse15_user_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
             AND that AUTH works along with a USER process"""
@@ -1887,10 +1895,10 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python = _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-opensuse15-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -1898,9 +1906,10 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
+        userpass = self.newpassword()
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass} --build-arg PYTHONPKG={pythonpkg} --build-arg PYTHON={python}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1919,7 +1928,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {userpass} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
