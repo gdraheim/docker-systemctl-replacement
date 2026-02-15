@@ -7,14 +7,17 @@ ENV WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"
 ENV INDEX_PHP="/srv/www/htdocs/index.php"
 ARG USERNAME=testuser_ok
-ARG PASSWORD=P@ssw0rd.dgPwzyiScdd5GPEvBAbOlWRuKD5RIneJ
+ARG USERPASS=P@ssw0rd.dgPwzyiScdd5GPEvBAbOlWRuKD5RIneJ
 ARG TESTPASS=P@ssw0rd.KFXnlRDnf.FW6U6r75RfLctUQdIaukm2
 ARG LISTEN=172.0.0.0/8
-ENV GPG --no-gpg-checks
+ARG PYTHON="python3"
+ARG PYTHONPKG=${PYTHON}
+ENV GPG="--no-gpg-checks"
 EXPOSE 80
 
+RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 COPY tmp/systemctl3.py /usr/bin/systemctl
-RUN zypper $GPG install -r repo-oss -y python3
+RUN zypper $GPG install -r repo-oss -y ${PYTHONPKG}
 RUN zypper $GPG install -r repo-oss -y apache2 apache2-utils mariadb-server mariadb-tools 
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y php7 php7-mysql apache2-mod_php7 phpMyAdmin

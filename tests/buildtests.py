@@ -930,8 +930,9 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9143_apache2_opensuse15_dockerfile(self) -> None:
-        self.test_9145_apache2_opensuse15_dockerfile("python3.11")
-    def test_9145_apache2_opensuse15_dockerfile(self, python: str = NIX) -> None:
+        testname = self.testname()
+        self.test_9145_apache2_opensuse15_dockerfile("python3.11", testname)
+    def test_9145_apache2_opensuse15_dockerfile(self, python: str = NIX, testname: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -950,8 +951,8 @@ class DockerBuildTest(unittest.TestCase):
         python = python or _python or _python3
         latest = LATEST or os.path.basename(python)
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        testname = self.testname()
-        testdir = self.testdir()
+        testname = testname or self.testname()
+        testdir = self.testdir(testname)
         name = "apache2-opensuse15"
         dockerfile = F"{name}.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
@@ -986,7 +987,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
-        self.rm_testdir()
+        self.rm_testdir(testname)
     def test_9195_nginx_opensuse15_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an NGINX HTTP service 
@@ -2158,17 +2159,20 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9745_lamp_stack_opensuse15_php7(self) -> None:
+    def test_9743_lamp_stack_opensuse15_php7(self) -> None:
+        testname = self.testname()
+        self.test_9745_lamp_stack_opensuse15_php7("python3.11", testname)
+    def test_9745_lamp_stack_opensuse15_php7(self, python: str = NIX, testname: str = NIX) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         systemctl = tmp_systemctl3()
         if not systemctl: self.skipTest("no python3 systemctl.py")
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        testname = self.testname()
-        testdir = self.testdir()
+        testname = testname or self.testname()
+        testdir = self.testdir(testname)
         root = self.root(testdir)
         name = "lamp-stack-opensuse15"
         dockerfile = F"{name}.dockerfile"
@@ -2179,8 +2183,9 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         latest = LATEST or os.path.basename(python)
         password = self.newpassword()
+        pythonpkg = python_package(python, dockerfile)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg USERPASS={password} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHONPKG={pythonpkg}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -2221,7 +2226,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
-        self.rm_testdir()
+        self.rm_testdir(testname)
     def test_9829_tomcat_alma9_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Almalinux, 
             THEN we can create an image with an tomcat service 
