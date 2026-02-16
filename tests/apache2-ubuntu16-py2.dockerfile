@@ -1,6 +1,6 @@
 FROM "ubuntu:16.04"
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.8065"
+      __version__="1.5.1067"
 EXPOSE 80
 ARG PYTHON=python2
 ARG PYTHONPKG=python

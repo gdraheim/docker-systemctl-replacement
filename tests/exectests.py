@@ -9,7 +9,7 @@
 # pylint: disable=unused-variable,unused-argument,possibly-unused-variable
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.7.1066"
+__version__ = "1.7.1067"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
