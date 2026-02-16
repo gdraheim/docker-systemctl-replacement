@@ -1536,9 +1536,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
+        userpass = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1557,7 +1557,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {userpass} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
@@ -1608,9 +1608,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
+        userpass = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1629,7 +1629,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {userpass} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
@@ -1829,9 +1829,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        password = self.newpassword()
+        userpass = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg USERPASS={userpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1854,7 +1854,7 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {userpass} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"

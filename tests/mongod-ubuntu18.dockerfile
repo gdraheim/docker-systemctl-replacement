@@ -30,4 +30,3 @@ RUN systemctl enable mongod
 
 RUN touch /var/log/systemctl.debug.log
 CMD ["/usr/bin/systemctl"]
-# CMD /usr/bin/systemctl init mongod
