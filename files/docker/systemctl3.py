@@ -240,13 +240,13 @@ def strINET(value: int) -> str:
         return "UDP"
     if value == socket.SOCK_STREAM:
         return "TCP"
-    if value == socket.SOCK_RAW: # pragma: no cover
+    if value == socket.SOCK_RAW:
         return "RAW"
-    if value == socket.SOCK_RDM: # pragma: no cover
+    if value == socket.SOCK_RDM:
         return "RDM"
-    if value == socket.SOCK_SEQPACKET: # pragma: no cover
+    if value == socket.SOCK_SEQPACKET:
         return "SEQ"
-    return "<?>" # pragma: no cover
+    return "<?>"
 
 def strYes(value: Union[str, bool, None]) -> str:
     if value is True:
@@ -257,7 +257,7 @@ def strYes(value: Union[str, bool, None]) -> str:
 def strE(part: Union[str, int, float, None]) -> str:
     if not part:
         return NIX
-    if part is True: # pragma: no cover (is never a bool)
+    if part is True:
         return ALL
     return str(part)
 def strQ(part: Union[str, int, None]) -> str:
@@ -274,12 +274,12 @@ def to_intN(value: Optional[str], default: Optional[int] = None) -> Optional[int
     try:
         return int(value)
     except ValueError:
-        return default # pragma: no cover
+        return default
 def to_int(value: Union[str, int], default: int = 0) -> int:
     try:
         return int(value)
     except ValueError:
-        return default # pragma: no cover
+        return default
 def to_list(value: Union[str, List[str], Tuple[str], Tuple[str, ...], None]) -> List[str]:
     if not value:
         return []
@@ -343,7 +343,7 @@ def fnmatched(text: str, *patterns: str) -> bool:
 
 def unit_name_escape(text: str) -> str:
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
-    esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
+    esc = re.sub("([^a-zA-Z0-9:_./])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
     return esc.replace("/", "-")
 def unit_name_unescape(text: str) -> str:
     esc = text.replace("-", "/")
@@ -363,13 +363,13 @@ def os_path(root: Optional[str], path: str) -> str:
     if path.startswith(os.path.sep):
         path1 = path[1:]
         if path1.startswith(os.path.sep):
-            if DEBUG_STATUS:
+            if DEBUG_STATUS: # pragma: no cover
                 logg.debug("path starting with '//' is not moved to _root: %s", path)
             return path # real systemd accepts //paths as well
         else:
             return os.path.join(root, path1)
     else:
-        if DEBUG_STATUS:
+        if DEBUG_STATUS: # pragma: no cover
             logg.debug("adding _root prefix to path being not absolute: %s", path)
         return os.path.join(root, path)
 def path_replace_extension(path: str, old: str, new: str) -> str:
@@ -381,16 +381,6 @@ def get_exist_path(paths: List[str]) -> Optional[str]:
         if os.path.exists(p):
             return p
     return None
-
-def get_PAGER() -> List[str]:
-    PAGER = os.environ.get("PAGER", "less")
-    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
-    options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
-    if not pager:
-        pager = "cat"
-    if "less" in pager and options:
-        return [pager, "-" + options]
-    return [pager]
 
 def os_getlogin() -> str:
     """ NOT using os.getlogin() """

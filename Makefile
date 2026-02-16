@@ -265,16 +265,17 @@ coverage:
 	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) && mv -v .coverage .coverage.0
 	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
 	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
-	$(PYTHON3) -m coverage combine && \
-	$(PYTHON3) -m coverage report && \
-	$(PYTHON3) -m coverage annotate
+	$(PYTHON3) -m coverage combine && $(PYTHON3) -m coverage report && $(PYTHON3) -m coverage annotate
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
 	ls -l $(COVERSRC),cover
 	@ echo = $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
 	@ echo = $$(grep "def test_" $(FUNCTEST_PY) $(EXECTEST_PY) $(DOCKTEST_PY) | wc -l) "tests"
 coveragetime mins:
 	echo === $$(expr $$(expr $$(stat -c %Y $(COVERSRC),cover) - $$(stat -c %Y $(COVERSRC))) / 60) "mins"
-coverage0: ; $(PYTHON3) -m coverage run $(FUNCTEST_PY) $(FUNCTEST_OPTIONS)
+coverage0: 
+	rm .coverage* ; $(MAKE) $(COVERSRC)
+	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) $(VV)
+	$(PYTHON3) -m coverage combine; $(PYTHON3) -m coverage report && $(PYTHON3) -m coverage annotate
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
 coverage9: ; $(MAKE) coverage PYTHON3=$(PYTHON39)

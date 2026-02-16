@@ -54,16 +54,16 @@ if "files/docker/systemctl3" in SYSTEMCTL:
     from files.docker import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
 elif "src/systemctl3" in SYSTEMCTL:
     sys.path = [os.curdir] + sys.path
-    from src import systemctl3 as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+    from src import systemctl3 as app # type: ignore[no-redef,attr-defined,unused-ignore] # pylint: disable=no-name-in-module
 elif "src/systemctl" in SYSTEMCTL:
     sys.path = [os.curdir] + sys.path
-    from src import systemctl as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+    from src import systemctl as app # type: ignore[no-redef,attr-defined,unused-ignore] # pylint: disable=no-name-in-module
 elif "tmp/systemctl3" in SYSTEMCTL:
     sys.path = [os.curdir] + sys.path
-    from tmp import systemctl3 as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+    from tmp import systemctl3 as app # type: ignore[no-redef,attr-defined,unused-ignore] # pylint: disable=no-name-in-module
 elif "tmp/systemctl" in SYSTEMCTL:
     sys.path = [os.curdir] + sys.path
-    from tmp import systemctl as app # type: ignore[no-redef,attr-defined] # pylint: disable=no-name-in-module
+    from tmp import systemctl as app # type: ignore[no-redef,attr-defined,unused-ignore] # pylint: disable=no-name-in-module
 else:
     raise ImportError(F"unknown src location {SYSTEMCTL}")
 
@@ -86,52 +86,16 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(z, 11)
     def test_0105(self) -> None:
         n = app.to_intN(None, 11)
+        m = app.to_intN("m", 11)
         x = app.to_intN("2")
         y = app.to_intN("1")
         z = app.to_intN("0")
         self.assertEqual(n, 11)
+        self.assertEqual(m, 11)
         self.assertEqual(x, 2)
         self.assertEqual(y, 1)
         self.assertEqual(z, 0)
-    def test_0110(self) -> None:
-        n = app.strYes(None)
-        x = app.strYes(False)
-        y = app.strYes(True)
-        z = app.strYes("zz")
-        self.assertEqual(n, "no")
-        self.assertEqual(x, "no")
-        self.assertEqual(y, "yes")
-        self.assertEqual(z, "zz")
-    def test_0120(self) -> None:
-        n = app.strE(None)
-        x = app.strE(False)
-        y = app.strE(True)
-        z = app.strE("zz")
-        self.assertEqual(n, "")
-        self.assertEqual(x, "")
-        self.assertEqual(y, "*")
-        self.assertEqual(z, "zz")
-    def test_0121(self) -> None:
-        n = app.strE(None)
-        x = app.strE(False)
-        y = app.strE(True)
-        z = app.strE("zz")
-        self.assertTrue(n is app.NIX)
-        self.assertTrue(x is app.NIX)
-        self.assertTrue(y is app.ALL)
-        self.assertFalse(z is app.NIX)
-    def test_0130(self) -> None:
-        n = app.strQ(None)
-        x = app.strQ(0)
-        y = app.strQ(1)
-        z = app.strQ("zz")
-        q = app.strQ("")
-        self.assertEqual(n, "")
-        self.assertEqual(x, "0")
-        self.assertEqual(y, "1")
-        self.assertEqual(z, "'zz'")
-        self.assertEqual(q, "''")
-    def test_0140(self) -> None:
+    def test_0109(self) -> None:
         n = app.int_mode("")
         x = app.int_mode("2")
         y = app.int_mode("1")
@@ -144,7 +108,57 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(z, 0)
         self.assertEqual(q, None)
         self.assertEqual(r, 9)
-    def test_0151(self) -> None:
+    def test_0110(self) -> None:
+        n = app.strYes(None)
+        x = app.strYes(False)
+        y = app.strYes(True)
+        z = app.strYes("zz")
+        self.assertEqual(n, "no")
+        self.assertEqual(x, "no")
+        self.assertEqual(y, "yes")
+        self.assertEqual(z, "zz")
+    def test_0111(self) -> None:
+        n = app.strE(None)
+        x = app.strE(False)
+        y = app.strE(True)
+        z = app.strE("zz")
+        self.assertEqual(n, "")
+        self.assertEqual(x, "")
+        self.assertEqual(y, "*")
+        self.assertEqual(z, "zz")
+    def test_0112(self) -> None:
+        n = app.strE(None)
+        x = app.strE(False)
+        y = app.strE(True)
+        z = app.strE("zz")
+        self.assertTrue(n is app.NIX)
+        self.assertTrue(x is app.NIX)
+        self.assertTrue(y is app.ALL)
+        self.assertFalse(z is app.NIX)
+    def test_0113(self) -> None:
+        n = app.strQ(None)
+        x = app.strQ(0)
+        y = app.strQ(1)
+        z = app.strQ("zz")
+        q = app.strQ("")
+        self.assertEqual(n, "")
+        self.assertEqual(x, "0")
+        self.assertEqual(y, "1")
+        self.assertEqual(z, "'zz'")
+        self.assertEqual(q, "''")
+    def test_0115(self) -> None:
+        s20 = "0123456789" * 2
+        s90 = "0123456789" * 9
+        x20 = app.o22(s20)
+        x90 = app.o22(s90)
+        self.assertEqual(x20, s20)
+        self.assertEqual(x90, "01234...67890123456789")
+        self.assertEqual(len(x90), 22)
+        n = app.o22(None) # type: ignore[arg-type]
+        z = app.o22(0) # type: ignore[arg-type]
+        self.assertEqual(n, None)
+        self.assertEqual(z, 0)
+    def test_0116(self) -> None:
         s20 = "0123456789" * 2
         s90 = "0123456789" * 9
         x20 = app.o44(s20)
@@ -156,7 +170,7 @@ class AppUnitTest(unittest.TestCase):
         z = app.o44(0) # type: ignore[arg-type]
         self.assertEqual(n, None)
         self.assertEqual(z, 0)
-    def test_0152(self) -> None:
+    def test_0117(self) -> None:
         s20 = "0123456789" * 2
         s90 = "0123456789" * 9
         x20 = app.o77(s20)
@@ -168,7 +182,7 @@ class AppUnitTest(unittest.TestCase):
         z = app.o77(0) # type: ignore[arg-type]
         self.assertEqual(n, None)
         self.assertEqual(z, 0)
-    def test_0160(self) -> None:
+    def test_0118(self) -> None:
         n00 = app.delayed(0)
         n01 = app.delayed(1)
         n02 = app.delayed(2)
@@ -185,7 +199,7 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(n11, "11.")
         self.assertEqual(n99, "99.")
         self.assertEqual(n111, "111.")
-    def test_0161(self) -> None:
+    def test_0119(self) -> None:
         n00 = app.delayed(0,":")
         n01 = app.delayed(1,":")
         n02 = app.delayed(2,":")
@@ -202,7 +216,30 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(n11, "11:")
         self.assertEqual(n99, "99:")
         self.assertEqual(n111, "111:")
-    def test_0180(self) -> None:
+    def test_0120(self) -> None:
+        n0 = app.to_list(None)
+        n1 = app.to_list([])
+        n2 = app.to_list("")
+        n3 = app.to_list(())
+        n4 = app.to_list(0) # type: ignore[arg-type]
+        x1 = app.to_list([""])
+        y1 = app.to_list(("",))
+        z1 = app.to_list(",")
+        x2 = app.to_list(["",""])
+        y2 = app.to_list(("",""))
+        z2 = app.to_list(",,")
+        self.assertEqual(n0, [])
+        self.assertEqual(n1, [])
+        self.assertEqual(n2, [])
+        self.assertEqual(n3, [])
+        self.assertEqual(n4, [])
+        self.assertEqual(x1, [""])
+        self.assertEqual(y1, [""])
+        self.assertEqual(z1, ["",""])
+        self.assertEqual(x2, ["",""])
+        self.assertEqual(y2, ["",""])
+        self.assertEqual(z2, ["","",""])
+    def test_0122(self) -> None:
         n1 = app.commalist([""])
         n2 = app.commalist(["", ""])
         n3 = app.commalist([" "])
@@ -233,7 +270,7 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(b2, ["a", "b"])
         self.assertEqual(c1, ["a", "b", "c"])
         self.assertEqual(c2, ["a", "b", "c"])
-    def test_0190(self) -> None:
+    def test_0130(self) -> None:
         n = app.fnmatched("a")
         z = app.fnmatched("a", "")
         x = app.fnmatched("a", "", "b")
@@ -276,6 +313,13 @@ class AppUnitTest(unittest.TestCase):
         want = "<?>"
         have = app.strINET(255)
         self.assertEqual(have, want)
+    def test_0210(self) -> None:
+        orig = "foo/bar-1@/var.lock$"
+        want = "foo-bar\\x2d1\\x40-var.lock\\x24"
+        have = app.unit_name_escape(orig)
+        self.assertEqual(have, want)
+        back = app.unit_name_unescape(have)
+        self.assertEqual(back, orig)
 
 if __name__ == "__main__":
     # unittest.main()
