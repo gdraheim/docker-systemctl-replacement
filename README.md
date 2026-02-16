@@ -1,9 +1,8 @@
 [![Lint Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/lintcheck.yml/badge.svg?event=push&branch=master)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/lintcheck.yml)
 [![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=master)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml)
 [![Unit Tests](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml/badge.svg?event=push&branch=master)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml)
-[![Code Coverage](https://img.shields.io/badge/460%20test-90%25%20coverage-brightgreen)](https://github.com/gdraheim/docker-systemctl-replacement/blob/master/testsuite.py)
+[![Code Coverage](https://img.shields.io/badge/480%20test-92%25%20coverage-brightgreen)](https://github.com/gdraheim/docker-systemctl-replacement/blob/master/testsuite.py)
 [![PyPI version](https://badge.fury.io/py/docker-systemctl-replacement.svg)](https://pypi.org/project/docker-systemctl-replacement/)
-
 
 # docker systemctl replacement
 
