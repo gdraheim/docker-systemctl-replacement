@@ -1588,7 +1588,9 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9324_redis_ubuntu18_dockerfile(self) -> None:
+    def test_9323_redis_ubuntu18_dockerfile(self) -> None:
+        self.test_9324_redis_ubuntu18_dockerfile(self.testname(), "python3.12")
+    def test_9324_redis_ubuntu18_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         systemctl = tmp_systemctl3()
@@ -1597,10 +1599,10 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
-        testname = self.testname()
+        testname = testname or self.testname()
         testdir = self.testdir()
         dockerfile = "redis-ubuntu24.dockerfile"
         addhosts = ""  # FIXME# self.local_addhosts(dockerfile)
@@ -1609,8 +1611,9 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         userpass = self.newpassword()
+        python1 = os.path.basename(python)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg USERPASS={userpass} --build-arg PYTHON={python1}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -2538,7 +2541,7 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9923_sshd_ubuntu24_dockerfile(self) -> None:
-        self.test_9924_sshd_ubuntu24_dockerfile(self.testname(), "python3.11")
+        self.test_9924_sshd_ubuntu24_dockerfile(self.testname(), "python3.12")
     def test_9924_sshd_ubuntu24_dockerfile(self, testname: str = NIX, python: str = NIX) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 24, 
             THEN we can create an image with an ssh service 
@@ -2550,7 +2553,7 @@ class DockerBuildTest(unittest.TestCase):
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
         docker = _docker
         curl = _curl
-        python = python = _python or _python3
+        python = python or _python or _python3
         if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = testname or self.testname()
