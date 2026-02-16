@@ -1,11 +1,10 @@
 FROM almalinux:9.4
+LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
+      __version__="1.7.1067"
 
 ###############################################################################
 ### WARNING: the phpmyadmin package has not been ported to EPEL 8 (07/2020) ###
 ###############################################################################
-
-LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.1067"
 
 ARG USERNAME=testuser_ok
 ARG USERPASS=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba598gsdrd

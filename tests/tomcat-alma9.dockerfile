@@ -1,11 +1,11 @@
 FROM almalinux:9.4
+LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
+      __version__="1.7.1067"
 
 ###################################################################
 ### WARNING: tomcat-webapps was removed from CENTOS 8 (07/2020) ###
 ###################################################################
 
-LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.1067"
 ARG PYTHON_EXE=/usr/libexec/platform-python
 ENV PYTHON_EXE="${PYTHON_EXE}"
 ENV SSL="--setopt sslverify=false"

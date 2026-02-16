@@ -13,7 +13,7 @@ PYTHON39 = python$(PY39)
 PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
 GIT=git
-VERFILES = files/docker/systemctl3.py tests/*tests.py pyproject.toml
+VERFILES = files/docker/systemctl3.py tests/*tests.py tests/*.dockerfile pyproject.toml 
 VV=-vv
 
 verfiles:

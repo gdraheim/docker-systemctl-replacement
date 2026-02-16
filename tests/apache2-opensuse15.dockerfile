@@ -1,15 +1,12 @@
 FROM opensuse/leap:15.6
-
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.1067"
-EXPOSE 80
+      __version__="1.7.1067"
+
 ARG PYTHON=python3
-ENV PYTHON=${PYTHON}
 ARG PYTHONPKG=python3
-ENV PYTHONPKG=${PYTHONPKG}
 ARG FRESH=--no-refresh
-ENV FRESH=${FRESH}
 ENV GPG="--no-gpg-checks"
+EXPOSE 80
 
 RUN echo ========= PYTHON=${PYTHON} PYTHONPKG=${PYTHONPKG}
 RUN [ -z "$FRESH" ] || zypper $GPG refresh repo-oss

@@ -1,10 +1,10 @@
 FROM ubuntu:22.04
-
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.1067"
-EXPOSE 80
+      __version__="1.7.1067"
+
 ARG PYTHON=python2
 ARG PYTHONPKG=${PYTHON}
+EXPOSE 80
 
 RUN apt-get update
 RUN apt-get install -y apache2 ${PYTHONPKG}
