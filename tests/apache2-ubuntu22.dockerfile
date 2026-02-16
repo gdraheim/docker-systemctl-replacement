@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.7.1067"
+      __version__="1.7.1071"
 
 ARG PYTHON=python3
 ARG PYTHONPKG=${PYTHON}

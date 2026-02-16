@@ -1,6 +1,6 @@
 FROM opensuse/leap:15.6
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.7.1067"
+      __version__="1.7.1071"
 
 ENV WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"
