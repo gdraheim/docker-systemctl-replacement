@@ -26,12 +26,10 @@ RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 # default was 'bind 127.0.0.1'
 RUN sed -i "s/^..requirepass foo.*/requirepass $USERPASS/" /etc/redis/default.conf
 
-RUN systemctl enable redis@default
+RUN systemctl enable -vvv redis@default
 RUN systemctl disable kbdsettings || true
 RUN systemctl default-services
-# TODO: the enable-command did not put it into default-services
 RUN systemctl cat redis@.service
 
 RUN touch /var/log/systemctl.debug.log
-# CMD ["/usr/bin/systemctl"]
-CMD ["/usr/bin/systemctl", "-1", "start", "redis@default"]
+CMD ["/usr/bin/systemctl"]

@@ -1692,10 +1692,18 @@ class SystemctlUnitFiles:
             requires = target_requires[requires]
         logg.debug("the [%s] requires %s", module, targets)
         return targets
-    def get_InstallTarget(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]:
+    def get_InstallTargets(self, conf: SystemctlConf, default: Optional[str] = None) -> List[str]:
+        targets: List[str] = []
         if not conf:
-            return default
-        return conf.get(Install, "WantedBy", default, True)
+            return targets
+        for setting in conf.getlist(Install, "WantedBy", [], True):
+            for elem in setting.split(" "):
+                target = elem.strip()
+                if target and target not in targets:
+                    targets += [ target ]
+        if not targets and default:
+            return [default]
+        return targets
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float:
         timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(section, "TimeoutStartSec", timeout)
@@ -5476,28 +5484,29 @@ class Systemctl:
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf: SystemctlConf) -> bool:
-        wanted = self.unitfiles.get_InstallTarget(conf)
+        wanted = self.unitfiles.get_InstallTargets(conf)
         if not wanted and not self._force:
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
-        target = wanted or self.get_default_target()
-        folder = self.enablefolder(target)
-        if self._root:
-            folder = os_path(self._root, folder)
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
         source = conf.filename()
         if not source: # pragma: no cover (was checked before)
             logg.debug("%s has no real file", conf.name())
             return False
-        symlink = os.path.join(folder, conf.name())
-        if TRUE:
+        targets = wanted or [self.get_default_target()]
+        for target in targets:
+            folder = self.enablefolder(target)
+            logg.debug("WantedBy %s -> %s", target, folder)
+            if self._root:
+                folder = os_path(self._root, folder)
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
+            symlink = os.path.join(folder, conf.name())
             _f = self._force and "-f" or ""
             logg.info("ln -s %s %s %s", _f, strQ(source), strQ(symlink))
-        if self._force and os.path.islink(symlink):
-            os.remove(target)
-        if not os.path.islink(symlink):
-            os.symlink(source, symlink)
+            if self._force and os.path.islink(symlink):
+                os.remove(target)
+            if not os.path.islink(symlink):
+                os.symlink(source, symlink)
         return True
     def rc3_root_folder(self) -> str:
         old_folder = os_path(self._root, _rc3_boot_folder)
@@ -5581,23 +5590,24 @@ class Systemctl:
             return False
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf: SystemctlConf) -> bool:
-        wanted = self.unitfiles.get_InstallTarget(conf)
+        wanted = self.unitfiles.get_InstallTargets(conf)
         if not wanted and not self._force:
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
-        target = wanted or self.get_default_target()
-        for folder in self.enablefolders(target):
-            if self._root:
-                folder = os_path(self._root, folder)
-            symlink = os.path.join(folder, conf.name())
-            if os.path.exists(symlink):
-                try:
-                    _f = self._force and "-f" or ""
-                    logg.info("rm %s %s", _f, strQ(symlink))
-                    if os.path.islink(symlink) or self._force:
-                        os.remove(symlink)
-                except (OSError, IOError) as e:
-                    logg.error("disable %s >> %s", symlink, e)
+        targets = wanted or [self.get_default_target()]
+        for target in targets:
+            for folder in self.enablefolders(target):
+                if self._root:
+                    folder = os_path(self._root, folder)
+                symlink = os.path.join(folder, conf.name())
+                if os.path.exists(symlink):
+                    try:
+                        _f = self._force and "-f" or ""
+                        logg.info("rm %s %s", _f, strQ(symlink))
+                        if os.path.islink(symlink) or self._force:
+                            os.remove(symlink)
+                    except OSError as e:
+                        logg.error("disable %s >> %s", symlink, e)
         return True
     def disable_unit_sysv(self, unit_file: str) -> bool:
         rc3 = self._disable_unit_sysv(unit_file, self.rc3_root_folder())
@@ -5686,16 +5696,17 @@ class Systemctl:
     def get_enabled_from(self, conf: SystemctlConf) -> str:
         if conf.masked:
             return "masked"
-        wanted = self.unitfiles.get_InstallTarget(conf)
-        target = wanted or self.get_default_target()
-        for folder in self.enablefolders(target):
-            if self._root:
-                folder = os_path(self._root, folder)
-            target = os.path.join(folder, conf.name())
-            if os.path.isfile(target):
-                return "enabled"
-        if not wanted:
-            return "static"
+        wanted = self.unitfiles.get_InstallTargets(conf)
+        targets = wanted or [self.get_default_target()]
+        for target in targets:
+            for folder in self.enablefolders(target):
+                if self._root:
+                    folder = os_path(self._root, folder)
+                target = os.path.join(folder, conf.name())
+                if os.path.isfile(target):
+                    return "enabled"
+            if not wanted:
+                return "static"
         return "disabled"
     def mask_modules(self, *modules: str) -> bool:
         """ mask [UNIT]... -- mask non-startable units """

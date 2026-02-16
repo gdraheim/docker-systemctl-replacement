@@ -28,11 +28,9 @@ RUN sed -i "s/^#* *requirepass .*/requirepass $USERPASS/" /etc/redis/default.con
 RUN systemctl enable redis@default
 RUN systemctl disable kbdsettings || true
 RUN systemctl default-services
-# TODO: the enable-command did not put it into default-services
 RUN systemctl cat redis@.service
 
 RUN touch /var/log/systemctl.debug.log
-# CMD ["/usr/bin/systemctl"]
-CMD ["/usr/bin/systemctl", "-1", "start", "redis@default"]
+CMD ["/usr/bin/systemctl"]
 USER redis
 
