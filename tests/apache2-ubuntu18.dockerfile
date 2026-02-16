@@ -7,7 +7,7 @@ ARG PYTHONPKG=${PYTHON}
 EXPOSE 80
 
 RUN apt-get update
-RUN apt-get install -y apache2 ${PYTHONPKG}}
+RUN apt-get install -y apache2 ${PYTHONPKG}
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 
