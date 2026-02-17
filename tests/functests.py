@@ -387,7 +387,7 @@ class AppUnitTest(unittest.TestCase):
         [Unit]
         Description = foo""")
         unit = app.SystemctlUnitFiles()
-        unit.add_unit_sysd_file("test1.service", tmp1)
+        unit.add_unit_file("test1.service", tmp1)
         want = "foo"
         have = unit.get_Description(unit.get_conf("test1.service"))
         self.assertEqual(have, want)

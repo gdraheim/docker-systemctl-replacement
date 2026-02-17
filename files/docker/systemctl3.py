@@ -771,8 +771,8 @@ class SystemctlConfigParser(SystemctlConfData):
     # def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
     #   SystemctlConfData.__init__(self, defaults, dict_type, allow_no_value)
     def read(self, filename: str) -> 'SystemctlConfigParser': # FIXME: Self in python3.11
-        return self.read_sysd(filename)
-    def read_sysd(self, filename: str) -> 'SystemctlConfigParser': # FIXME: Self in python3.11
+        return self.read_unit_file(filename)
+    def read_unit_file(self, filename: str) -> 'SystemctlConfigParser': # FIXME: Self in python3.11
         initscript = False
         initinfo = False
         section = "GLOBAL"
@@ -802,7 +802,7 @@ class SystemctlConfigParser(SystemctlConfData):
                     includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                     if not os.path.isfile(includefile):
                         raise FileNotFoundError("tried to include file that doesn't exist: %s" % includefile)
-                    self.read_sysd(includefile)
+                    self.read_unit_file(includefile)
                     continue
                 if line.startswith("["):
                     x = line.find("]")
@@ -824,7 +824,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if nextline:
                 self.set(section, name, text)
         return self
-    def read_sysv(self, filename: str) -> 'SystemctlConfigParser':
+    def read_sysv_file(self, filename: str) -> 'SystemctlConfigParser':
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
         initscript = False
@@ -1280,10 +1280,12 @@ class SystemctlUnitFiles:
     _SYSTEMD_UNIT_PATH: Optional[str]
     _SYSTEMD_SYSVINIT_PATH: Optional[str]
     _SYSTEMD_PRESET_PATH: Optional[str]
-    _loaded_file_sysv: Dict[str, SystemctlConf]
-    _loaded_file_sysd: Dict[str, SystemctlConf]
-    _file_for_unit_sysv: Dict[str, str]
-    _file_for_unit_sysd: Dict[str, str]
+    _loaded_unit_files: float
+    _loaded_sysv_files: float
+    _loaded_sysv_conf: Dict[str, SystemctlConf]
+    _loaded_unit_conf: Dict[str, SystemctlConf]
+    _file_for_sysv: Dict[str, str]
+    _file_for_unit: Dict[str, str]
     _preset_file_list: Optional[Dict[str, PresetFile]]
     def __init__(self, root: str = NIX) -> None:
         self._root = root or _root
@@ -1294,12 +1296,12 @@ class SystemctlUnitFiles:
         self._SYSTEMD_SYSVINIT_PATH = None
         self._SYSTEMD_PRESET_PATH = None
         # and the actual internal runtime state
-        self._loaded_sysd: float = 0.0 # time.time()
-        self._loaded_sysv: float = 0.0 # time.time()
-        self._loaded_file_sysv = {} # /etc/init.d/name => config data
-        self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
-        self._file_for_unit_sysv = {} # name.service => /etc/init.d/name
-        self._file_for_unit_sysd = {} # name.service => /etc/systemd/system/name.service
+        self._loaded_unit_files: float = 0.0 # time.time()
+        self._loaded_sysv_files: float = 0.0 # time.time()
+        self._loaded_sysv_conf = {} # /etc/init.d/name => config data
+        self._loaded_unit_conf = {} # /etc/systemd/system/name.service => config data
+        self._file_for_sysv = {} # name.service => /etc/init.d/name
+        self._file_for_unit = {} # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
     def user(self) -> str:
         return self._user_getlogin
@@ -1362,7 +1364,7 @@ class SystemctlUnitFiles:
             self._SYSTEMD_PRESET_PATH = os.environ.get("SYSTEMD_PRESET_PATH", ":")
         assert self._SYSTEMD_PRESET_PATH is not None
         return self._SYSTEMD_PRESET_PATH
-    def sysd_folders(self) -> Iterable[str]:
+    def unit_file_folders(self) -> Iterable[str]:
         """ if --user then these folders are preferred """
         if self.user_mode():
             for folder in self.user_folders():
@@ -1370,12 +1372,12 @@ class SystemctlUnitFiles:
         if TRUE:
             for folder in self.system_folders():
                 yield folder
-    def scan_unit_sysd_files(self, reload: bool = False) -> List[str]: # -> [ unit-names,... ]
+    def scan_unit_files(self, reload: bool = False) -> List[str]: # -> [ unit-names,... ]
         """ reads all unit files, returns the first filename for the unit given """
-        if not self._loaded_sysd or reload:
-            self._loaded_sysd = time.time()
+        if not self._loaded_unit_files or reload:
+            self._loaded_unit_files = time.time()
             found = 0
-            for folder in self.sysd_folders():
+            for folder in self.unit_file_folders():
                 if not folder:
                     continue
                 folder = os_path(self._root, folder)
@@ -1385,13 +1387,13 @@ class SystemctlUnitFiles:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    found = self.add_unit_sysd_file(name, path)
-            logg.debug("found %s sysd files", found)
-        return list(self._file_for_unit_sysd.keys())
-    def scan_unit_sysv_files(self, reload: bool = False) -> List[str]: # -> [ unit-names,... ]
+                    found = self.add_unit_file(name, path)
+            logg.debug("found %s unit files", found)
+        return list(self._file_for_unit.keys())
+    def scan_sysv_files(self, reload: bool = False) -> List[str]: # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
-        if not self._loaded_sysv or reload:
-            self._loaded_sysv = time.time()
+        if not self._loaded_sysv_files or reload:
+            self._loaded_sysv_files = time.time()
             found = 0
             for folder in self.init_folders():
                 if not folder:
@@ -1403,41 +1405,41 @@ class SystemctlUnitFiles:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    found = self.add_unit_sysv_file(name, path)
+                    found = self.add_sysv_file(name, path)
             logg.debug("found %s sysv files", found)
-        return list(self._file_for_unit_sysv.keys())
-    def add_unit_sysd_file(self, name: str, path: str) -> int:
+        return list(self._file_for_sysv.keys())
+    def add_unit_file(self, name: str, path: str) -> int:
         service_name = name
-        if service_name not in self._file_for_unit_sysd:
-            self._file_for_unit_sysd[service_name] = path
-        return len(self._file_for_unit_sysd)
-    def add_unit_sysv_file(self, name: str, path: str) -> int:
+        if service_name not in self._file_for_unit:
+            self._file_for_unit[service_name] = path
+        return len(self._file_for_unit)
+    def add_sysv_file(self, name: str, path: str) -> int:
         service_name = name + ".service" # simulate systemd
-        if service_name not in self._file_for_unit_sysv:
-            self._file_for_unit_sysv[service_name] = path
-        return len(self._file_for_unit_sysv)
-    def unit_sysd_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
+        if service_name not in self._file_for_sysv:
+            self._file_for_sysv[service_name] = path
+        return len(self._file_for_sysv)
+    def get_unit_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
         """ file path for the given module (systemd) """
-        self.scan_unit_sysd_files()
-        if module and module in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module]
-        if module and unit_of(module) in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[unit_of(module)]
+        self.scan_unit_files()
+        if module and module in self._file_for_unit:
+            return self._file_for_unit[module]
+        if module and unit_of(module) in self._file_for_unit:
+            return self._file_for_unit[unit_of(module)]
         return None
-    def unit_sysv_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
+    def get_sysv_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
         """ file path for the given module (sysv) """
-        self.scan_unit_sysv_files()
-        if module and module in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[module]
-        if module and unit_of(module) in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[unit_of(module)]
+        self.scan_sysv_files()
+        if module and module in self._file_for_sysv:
+            return self._file_for_sysv[module]
+        if module and unit_of(module) in self._file_for_sysv:
+            return self._file_for_sysv[unit_of(module)]
         return None
     def unit_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
         """ file path for the given module (sysv or systemd) """
-        path = self.unit_sysd_file(module)
+        path = self.get_unit_file(module)
         if path is not None:
             return path
-        path = self.unit_sysv_file(module)
+        path = self.get_sysv_file(module)
         if path is not None:
             return path
         return None
@@ -1446,9 +1448,9 @@ class SystemctlUnitFiles:
         self.unit_file() # scan all
         if not filename:
             return None
-        if filename in self._file_for_unit_sysd.values():
+        if filename in self._file_for_unit.values():
             return False
-        if filename in self._file_for_unit_sysv.values():
+        if filename in self._file_for_sysv.values():
             return True
         return None # not True
     def is_user_conf(self, conf: SystemctlConf) -> bool:
@@ -1478,7 +1480,7 @@ class SystemctlUnitFiles:
         """ search for some.service.d/extra.conf files """
         result: Dict[str, str] = {}
         basename_d = unit + ".d"
-        for folder in self.sysd_folders():
+        for folder in self.unit_file_folders():
             if not folder:
                 continue
             folder = os_path(self._root, folder)
@@ -1494,65 +1496,65 @@ class SystemctlUnitFiles:
                 if name not in result:
                     result[name] = path
         return result
-    def load_sysd_template_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
+    def load_unit_template_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
         """ read the unit template with a UnitConfParser (systemd) """
         if module and "@" in module:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
-            conf = self.load_sysd_unit_conf(service)
+            conf = self.load_unit_conf(service)
             if conf:
                 conf.module = module
             return conf
         return None
-    def load_sysd_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
+    def load_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
         """ read the unit file with a UnitConfParser (systemd) """
-        path = self.unit_sysd_file(module)
+        path = self.get_unit_file(module)
         if not path:
             return None
-        if path in self._loaded_file_sysd:
-            return self._loaded_file_sysd[path]
+        if path in self._loaded_unit_conf:
+            return self._loaded_unit_conf[path]
         masked = None
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
         drop_in_files: Dict[str, str] = {}
         data = UnitConfParser()
         if not masked:
-            data.read_sysd(path)
+            data.read_unit_file(path)
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
-                data.read_sysd(path)
+                data.read_unit_file(path)
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.nonloaded_path = path # if masked
         conf.drop_in_files = drop_in_files
         conf._root = self._root  # pylint: disable=protected-access
-        self._loaded_file_sysd[path] = conf
+        self._loaded_unit_conf[path] = conf
         return conf
-    def load_sysv_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
+    def load_sysv_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
         """ read the unit file with a UnitConfParser (sysv) """
-        path = self.unit_sysv_file(module)
+        path = self.get_sysv_file(module)
         if not path:
             return None
-        if path in self._loaded_file_sysv:
-            return self._loaded_file_sysv[path]
+        if path in self._loaded_sysv_conf:
+            return self._loaded_sysv_conf[path]
         data = UnitConfParser()
-        data.read_sysv(path)
+        data.read_sysv_file(path)
         conf = SystemctlConf(data, module)
         conf._root = self._root  # pylint: disable=protected-access
-        self._loaded_file_sysv[path] = conf
+        self._loaded_sysv_conf[path] = conf
         return conf
     def load_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf | None(not-found)
         """ read the unit file with a UnitConfParser (sysv or systemd) """
         try:
-            conf = self.load_sysd_unit_conf(module)
+            conf = self.load_unit_conf(module)
             if conf is not None:
                 return conf
-            conf = self.load_sysd_template_conf(module)
+            conf = self.load_unit_template_conf(module)
             if conf is not None:
                 return conf
-            conf = self.load_sysv_unit_conf(module)
+            conf = self.load_sysv_conf(module)
             if conf is not None:
                 return conf
         except Exception as e:  # pylint: disable=broad-exception-caught
@@ -1574,15 +1576,15 @@ class SystemctlUnitFiles:
         if conf is not None:
             return conf
         return self.default_conf(module)
-    def match_sysd_templates(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
+    def match_unit_templates(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
             The module string should contain an instance name already. """
         modules = to_list(modules)
         if not modules:
             return
-        self.scan_unit_sysd_files()
-        for item in sorted(self._file_for_unit_sysd.keys()):
+        self.scan_unit_files()
+        for item in sorted(self._file_for_unit.keys()):
             if "@" not in item:
                 continue
             service_unit = parse_unit(item)
@@ -1592,14 +1594,14 @@ class SystemctlUnitFiles:
                 module_unit = parse_unit(module)
                 if service_unit.prefix == module_unit.prefix:
                     yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
-    def match_sysd_units(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
+    def match_unit_files(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         suffix = ".service"
         modules = to_list(modules)
-        self.scan_unit_sysd_files()
-        for item in sorted(self._file_for_unit_sysd.keys()):
+        self.scan_unit_files()
+        for item in sorted(self._file_for_unit.keys()):
             if "." not in item:
                 pass
             elif not modules:
@@ -1608,14 +1610,14 @@ class SystemctlUnitFiles:
                 yield item
             elif [module for module in modules if module+suffix == item]:
                 yield item
-    def match_sysv_units(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
+    def match_sysv_files(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         suffix = ".service"
         modules = to_list(modules)
-        self.scan_unit_sysv_files()
-        for item in sorted(self._file_for_unit_sysv.keys()):
+        self.scan_sysv_files()
+        for item in sorted(self._file_for_sysv.keys()):
             if not modules:
                 yield item
             elif [module for module in modules if fnmatch.fnmatchcase(item, module)]:
@@ -1628,13 +1630,13 @@ class SystemctlUnitFiles:
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         found: List[str] = []
-        for unit in self.match_sysd_units(modules):
+        for unit in self.match_unit_files(modules):
             if unit not in found:
                 found.append(unit)
-        for unit in self.match_sysd_templates(modules):
+        for unit in self.match_unit_templates(modules):
             if unit not in found:
                 found.append(unit)
-        for unit in self.match_sysv_units(modules):
+        for unit in self.match_sysv_files(modules):
             if unit not in found:
                 found.append(unit)
         return found
@@ -1642,9 +1644,9 @@ class SystemctlUnitFiles:
         """ the basic loading state of all units """
         self.unit_file() # scan all
         result: List[Tuple[str, str, str]] = []
-        for name, value in self._file_for_unit_sysd.items():
-            result += [(name, "SysD", value)]
-        for name, value in self._file_for_unit_sysv.items():
+        for name, value in self._file_for_unit.items():
+            result += [(name, "Unit", value)]
+        for name, value in self._file_for_sysv.items():
             result += [(name, "SysV", value)]
         return result
     def each_target_file(self) -> Iterable[Tuple[str, str]]:
@@ -1920,7 +1922,7 @@ class SystemctlUnitFiles:
         deps: Dict[str, str] = {}
         for style in styles:
             if style.startswith("."):
-                for folder in self.sysd_folders():
+                for folder in self.unit_file_folders():
                     if not folder:
                         continue
                     require_path = os.path.join(folder, unit + style)
