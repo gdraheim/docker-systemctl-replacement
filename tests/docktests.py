@@ -942,7 +942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{sed} -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}{suffix}"
                 sh____(cmd.format(**locals()))
     def build_baseimage(self, local_image: str, python: str) -> str:
-        if TODO or KEEP:
+        if TODO:
             return local_image
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -996,7 +996,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}" # to build the baseimage
         sh____(cmd.format(**locals()))
-        if image == baseimage:
+        if image:
             cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
             cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"

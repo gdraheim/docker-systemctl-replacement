@@ -133,7 +133,8 @@ est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(E
 est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
 est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
 est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
-est_9%: ; $(MAKE) tmp/systemctl3.py; $(BUILD) "t$(notdir $@)" $(VV) $V --todo $(LOCALPACKAGES) --systemctl3=tmp/systemctl3.py # stripped
+est_9%: ; $(MAKE) tmp/systemctl3.py; $(BUILD) "t$(notdir $@)" $(VV) $V --keep --systemctl3=tmp/systemctl3.py $(LOCALPACKAGES)
+st_9%: ; $(MAKE) tmp/systemctl3.py; $(BUILD) "te$(notdir $@)" $(VV) $V --todo --systemctl3=tmp/systemctl3.py # stripped
 test_0%: ; $(FUNCTEST) "$(notdir $@)" $(VV) $V
 test_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
