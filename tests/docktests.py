@@ -1014,7 +1014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return local_image.replace(image, baseimage)
 
     ################
-    def test_5000_systemctl_py_inside_container(self) -> None:
+    def test_5001_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1051,7 +1051,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_5001_coverage_systemctl_py_inside_container(self) -> None:
+    def test_5002_coverage_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py with coverage inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1095,7 +1095,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_5002_systemctl_py_enable_in_container(self) -> None:
+    def test_5011_systemctl_py_enable_in_container(self) -> None:
         """ check that we can enable services in a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1126,20 +1126,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
             sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
@@ -1166,7 +1168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
-    def test_5003_systemctl_py_default_services_in_container(self) -> None:
+    def test_5012_systemctl_py_default_services_in_container(self) -> None:
         """ check that we can enable services in a docker container to have default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1197,20 +1199,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
             sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))

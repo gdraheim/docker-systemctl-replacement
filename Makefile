@@ -122,7 +122,7 @@ est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(E
 est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
@@ -131,15 +131,15 @@ test_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_3%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_4%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
-test_5%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+test_5%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_8%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_9%: ; $(MAKE) src/systemctl.py; $(BUILD) "$(notdir $@)" $(VV) $V --systemctl=src/systemctl.py
-real_1%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
-real_2%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
-real_3%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
-real_4%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
+real_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+real_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+real_3%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
+real_4%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 real_5%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 real_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
