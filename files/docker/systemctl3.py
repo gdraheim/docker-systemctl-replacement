@@ -1682,11 +1682,11 @@ class SystemctlUnitFiles:
             requires = target_requires[requires]
         logg.debug("the [%s] requires %s", module, targets)
         return targets
-    def get_InstallTargets(self, conf: SystemctlConf, default: Optional[str] = None) -> List[str]:
+    def get_InstallTargets(self, conf: SystemctlConf, section: str = Install, default: Optional[str] = None) -> List[str]:
         targets: List[str] = []
         if not conf:
             return targets
-        for setting in conf.getlist(Install, "WantedBy", [], True):
+        for setting in conf.getlist(section, "WantedBy", [], True):
             for elem in setting.split(" "):
                 target = elem.strip()
                 if target and target not in targets:
@@ -1694,80 +1694,77 @@ class SystemctlUnitFiles:
         if not targets and default:
             return [default]
         return targets
-    def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float:
-        timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
+    def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> float:
+        timeout = conf.get(section, "TimeoutSec", default or strE(DefaultTimeoutStartSec))
         timeout = conf.get(section, "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket) -> float:
-        timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
+    def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket, default: Optional[str] = None) -> float:
+        timeout = conf.get(section, "TimeoutSec", default or strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service) -> bool:
-        return conf.getbool(section, "RemainAfterExit", "no")
-    def get_StatusFile(self, conf: SystemctlConf, section: str = Service) -> Optional[str]:
-        """ file where to store a status mark """
-        return conf.get(section, "StatusFile", None)
-    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service) -> bool:
-        return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
-    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
-    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
-    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
-    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
-    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
-    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "RuntimeDirectoryMode", "")
-    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "StateDirectoryMode", "")
-    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "CacheDirectoryMode", "")
-    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "LogsDirectoryMode", "")
-    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "ConfigurationDirectoryMode", "")
-    def get_WorkingDirectory(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "WorkingDirectory", "")
-    def get_TimeoutStopSec(self, conf: SystemctlConf) -> float:
-        timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
-        timeout = conf.get(Service, "TimeoutStopSec", timeout)
+    def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> bool:
+        return conf.getbool(section, "RemainAfterExit", default or "no")
+    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> bool:
+        return conf.getbool(section, "RuntimeDirectoryPreserve", default or "no")
+    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return self.expand_special(conf.get(section, "RuntimeDirectory", default or ""), conf)
+    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return self.expand_special(conf.get(section, "StateDirectory", default or ""), conf)
+    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return self.expand_special(conf.get(section, "CacheDirectory", default or ""), conf)
+    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return self.expand_special(conf.get(section, "LogsDirectory", default or ""), conf)
+    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return self.expand_special(conf.get(section, "ConfigurationDirectory", default or ""), conf)
+    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "RuntimeDirectoryMode", default or "")
+    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "StateDirectoryMode", default or "")
+    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "CacheDirectoryMode", default or "")
+    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "LogsDirectoryMode", default or "")
+    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "ConfigurationDirectoryMode", default or "")
+    def get_WorkingDirectory(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "WorkingDirectory", default or "")
+    def get_TimeoutStopSec(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> float:
+        timeout = conf.get(section, "TimeoutSec", default or strE(DefaultTimeoutStartSec))
+        timeout = conf.get(section, "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_SendSIGKILL(self, conf: SystemctlConf) -> bool:
-        return conf.getbool(Service, "SendSIGKILL", "yes")
-    def get_SendSIGHUP(self, conf: SystemctlConf) -> bool:
-        return conf.getbool(Service, "SendSIGHUP", "no")
-    def get_KillMode(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "KillMode", "control-group")
-    def get_KillSignal(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "KillSignal", "SIGTERM")
-    def get_StartLimitBurst(self, conf: SystemctlConf) -> int:
+    def get_SendSIGKILL(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> bool:
+        return conf.getbool(section, "SendSIGKILL", default or "yes")
+    def get_SendSIGHUP(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> bool:
+        return conf.getbool(section, "SendSIGHUP", default or "no")
+    def get_KillMode(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "KillMode", default or "control-group")
+    def get_KillSignal(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> str:
+        return conf.get(section, "KillSignal", default or "SIGTERM")
+    def get_StartLimitBurst(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> int:
         defaults = DefaultStartLimitBurst
-        return to_int(conf.get(Service, "StartLimitBurst", strE(defaults)), defaults) # 5
-    def get_StartLimitIntervalSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
-        maximum = maximum or 999
+        return to_int(conf.get(section, "StartLimitBurst", default or strE(defaults)), defaults) # 5
+    def get_StartLimitIntervalSec(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None, maximum: Optional[int] = None) -> float:
+        maximum = maximum or DefaultMaximumTimeout * 5
         defaults = DefaultStartLimitIntervalSec
-        interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults)) # 10s
+        interval = conf.get(section, "StartLimitIntervalSec", default or strE(defaults)) # 10s
         return time_to_seconds(interval, maximum)
-    def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
+    def get_RestartSec(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None, maximum: Optional[int] = None) -> float:
         maximum = maximum or DefaultMaximumTimeout
-        delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
+        delay = conf.get(section, "RestartSec", default or strE(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def get_description(self, unit: str, default: str = NIX) -> str:
         return self.get_Description(self.load_conf(unit)) or default
-    def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
+    def get_Description(self, conf: Optional[SystemctlConf], section: str = Unit, default: str = NIX) -> str: # -> text
         """ Unit.Description could be empty sometimes """
         if not conf:
             return default or ""
-        description = conf.get(Unit, "Description", default)
+        description = conf.get(section, "Description", default)
         return self.expand_special(description, conf)
-    def get_User(self, conf: SystemctlConf) -> Optional[str]:
-        return self.expand_special(conf.get(Service, "User", ""), conf)
-    def get_Group(self, conf: SystemctlConf) -> Optional[str]:
-        return self.expand_special(conf.get(Service, "Group", ""), conf)
-    def get_SupplementaryGroups(self, conf: SystemctlConf) -> List[str]:
-        return self.expand_list(conf.getlist(Service, "SupplementaryGroups", []), conf)
+    def get_User(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> Optional[str]:
+        return self.expand_special(conf.get(section, "User", default or ""), conf)
+    def get_Group(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> Optional[str]:
+        return self.expand_special(conf.get(section, "Group", default or ""), conf)
+    def get_SupplementaryGroups(self, conf: SystemctlConf, section: str = Service, default: Optional[List[str]] = None) -> List[str]:
+        return self.expand_list(conf.getlist(section, "SupplementaryGroups", default or []), conf)
     def expand_list(self, group_lines: List[str], conf: SystemctlConf) -> List[str]:
         result = []
         for line in group_lines:
@@ -2831,7 +2828,7 @@ class Systemctl:
         return os_path(self._root, self.unitfiles.expand_special(status_file, conf))
     def get_StatusFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # -> text
         """ file where to store a status mark """
-        status_file = conf.get(Service, "StatusFile", default)
+        status_file =  conf.get(Service, "StatusFile", default)
         if status_file:
             return status_file
         root = conf.root_mode()
