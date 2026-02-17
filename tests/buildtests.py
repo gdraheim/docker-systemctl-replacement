@@ -6,7 +6,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "2.1.1071"
+__version__ = "2.1.1072"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
