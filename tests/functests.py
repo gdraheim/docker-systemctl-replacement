@@ -100,6 +100,16 @@ def get_caller_caller_name() -> str:
     frame = currentframe.f_back.f_back.f_back # type: ignore[union-attr]
     return frame.f_code.co_name # type: ignore[union-attr]
 
+def execmode(val: app.ExecMode) -> str:
+    bits = ["check" if val.check else "nocheck"]
+    if val.nouser:
+        bits += ["nouser"]
+    if val.noexpand:
+        bits += ["noexpand"]
+    if val.argv0:
+        bits += ["argv0"]
+    return "+".join(bits)
+
 class AppUnitTest(unittest.TestCase):
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
@@ -382,16 +392,198 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(back, orig)
     def test_0300(self) -> None:
         tmp = self.testdir()
-        tmp1 = F"{tmp}/test1.service"
-        text_file(tmp1, """
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
         [Unit]
         Description = foo""")
         unit = app.SystemctlUnitFiles()
-        unit.add_unit_file("test1.service", tmp1)
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
         want = "foo"
-        have = unit.get_Description(unit.get_conf("test1.service"))
-        self.assertEqual(have, want)
+        conf = unit.get_conf(svc1)
+        have = unit.get_Description(conf)
+        self.assertEqual(want, have)
         self.rm_testdir()
+    def test_0310(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = /usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "check"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0311(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = -/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0312(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = -!/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck+nouser"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0313(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = !-/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck+nouser"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0314(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = !!-/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck+nouser"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0315(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = -+/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck+nouser"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0316(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = +-/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "nocheck+nouser"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0317(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = +:/usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "check+nouser+noexpand"
+        want = ["/usr/bin/false"]
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0318(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = +@/usr/bin/true /usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "check+nouser+argv0"
+        want = ["/usr/bin/true"] # not false
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+    def test_0319(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.service"
+        text_file(F"{tmp}/{svc1}", """
+        [Service]
+        ExecStart = |@/usr/bin/true /usr/bin/false""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_file(svc1, F"{tmp}/{svc1}")
+        mode = "check+argv0" # pipe is ignored
+        want = ["/usr/bin/true"] # not false
+        conf = unit.get_conf(svc1)
+        env = unit.get_env(conf)
+        for cmd in conf.getlist("Service", "ExecStart", []):
+            exe, newcmd = unit.expand_cmd(cmd, env, conf)
+            logg.info("[%s] %s", execmode(exe), app.shell_cmd(newcmd))
+            self.assertEqual(want, newcmd)
+            self.assertEqual(mode, execmode(exe))
+        self.rm_testdir()
+
 if __name__ == "__main__":
     # unittest.main()
     suite = unittest.TestSuite()
