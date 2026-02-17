@@ -14,7 +14,7 @@ __version__ = "1.7.1071"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Tuple, Iterator, Iterable, Union, Optional, TextIO
+from typing import Dict, List, Tuple, Iterator, Iterable, Union, Optional, TextIO
 
 import subprocess
 import os
@@ -224,40 +224,40 @@ def decodes(text: Union[str, bytes, None]) -> str:
         except:
             return text.decode("latin-1")
     return text
-def sh____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+def sh____(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Dict[str, str]]= None) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.check_call(cmd, shell=shell)
-def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
+    return subprocess.check_call(cmd, shell=shell, env=env)
+def sx____(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Dict[str, str]]= None) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    return subprocess.call(cmd, shell=shell)
-def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
+    return subprocess.call(cmd, shell=shell, env=env)
+def output(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Dict[str, str]]= None) -> str:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
+def output2(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Dict[str, str]]= None) -> Tuple[str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, int]:
+def output3(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Dict[str, str]]= None) -> Tuple[str, str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
@@ -935,6 +935,84 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
                 cmd = "{sed} -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}{suffix}"
                 sh____(cmd.format(**locals()))
+    def build_baseimage(self, local_image: str, python: str) -> str:
+        if TODO or KEEP:
+            return local_image
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = local_image if " " not in local_image else local_image.split(" ")[-1]
+        if not image:
+            return local_image
+        python = python or os.path.basename(_python)
+        docker = _docker
+        images = IMAGES
+        pythonver = python.replace(".","")
+        imagever = image.replace(".","").replace(":","-").replace("/","-")
+        testname = "test_{pythonver}_{imagever}".format(**locals())
+        baseimage = "{images}/{testname}".format(**locals())
+        cmd = "{docker} inspect {baseimage}"
+        out = output(cmd.format(**locals()))
+        logg.debug("docker inspect %s => %s", baseimage, out)
+        oldcreated: Optional[datetime.datetime] = None
+        if out.strip() and out.strip() != "[]":
+            oldimage = json.loads(out)
+            oldcreated = datetime.datetime.strptime(oldimage[0]["Created"].split(".")[0]+" +0000", "%Y-%m-%dT%H:%M:%S %z")
+        pidstarted: Optional[datetime.datetime] = None
+        pid = os.getpid()
+        cmd = "ps -eo pid,lstart"
+        out = output(cmd.format(**locals()), env={"LANG":"C", "LC_TIME": "C"})
+        if out:
+            pidprefix = "%i " % pid
+            for nextline in out.splitlines():
+                line = nextline.strip()
+                if line.startswith(pidprefix):
+                    pid_lstart = line.split(" ",1)[1]
+                    pidstarted = datetime.datetime.strptime(pid_lstart, "%a %b %d %H:%M:%S %Y").astimezone()
+        logg.info("pidstarted [%s] oldcreated [%s] %s", pidstarted, oldcreated, baseimage)
+        assert pidstarted
+        if oldcreated and oldcreated > pidstarted:
+            logg.info("reuse older build of %s", baseimage)
+            return local_image.replace(image, baseimage)
+        logg.info("need to build fresh %s", baseimage)
+        #
+        pythonpkg = python_package(python, image)
+        python_coverage = coverage_package(python, image)
+        if "python3" in python and "centos:7" in image:
+            if SKIP: self.skipTest("no python3 on centos:7")
+        docker = _docker
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        cmd = "{docker} rmi -f {baseimage}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}" # to build the baseimage
+        sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {pythonpkg}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} commit {testname} {baseimage}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm -f {testname}"
+        sx____(cmd.format(**locals()))
+        return local_image.replace(image, baseimage)
+
     ################
     def test_5000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
@@ -1272,23 +1350,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
         """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} cp {testdir}/binkillall {testname}:/usr/bin/binkillall"
         sh____(cmd.format(**locals()))
@@ -1696,25 +1776,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -2073,28 +2155,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -2466,28 +2550,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -2816,25 +2902,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -3086,25 +3174,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -3372,25 +3462,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -3697,25 +3789,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "done$1" >&2
             exit 0
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
@@ -4029,27 +4123,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -4248,25 +4344,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
         """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} cp {testdir}/binkillall {testname}:/usr/bin/binkillall"
         sh____(cmd.format(**locals()))
@@ -4688,27 +4786,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -5082,30 +5182,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -5494,30 +5596,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -5860,27 +5964,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -6147,27 +6253,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -6464,27 +6572,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "done$1" >&2
             exit 0
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
@@ -6619,27 +6729,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
         """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
@@ -6837,27 +6949,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7063,30 +7177,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -7300,30 +7416,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -7493,27 +7611,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7677,27 +7797,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7818,24 +7940,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7900,24 +8024,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
@@ -8004,22 +8130,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8107,22 +8235,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8198,22 +8328,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8289,22 +8421,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8393,22 +8527,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8518,22 +8654,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8627,22 +8765,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8737,22 +8877,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -8879,22 +9021,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -9072,22 +9216,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        if COVERAGE:
             cmd = "{docker} exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
@@ -9168,22 +9315,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9259,22 +9408,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9352,22 +9503,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9444,22 +9597,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9536,22 +9691,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9629,22 +9786,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9724,22 +9883,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9818,22 +9979,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -9911,22 +10074,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
+        if COVERAGE:
             cmd = "{docker} exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
@@ -10009,22 +10175,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10102,22 +10270,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10197,22 +10367,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10291,22 +10463,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10385,22 +10559,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {bsaeimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10480,22 +10656,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10577,22 +10755,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10673,22 +10853,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {bseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
             sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -10773,25 +10955,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10884,25 +11068,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10992,25 +11178,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -11138,25 +11326,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} bash -c 'test -f /etc/init.d/ondemand && systemctl disable ondemand'" # ubuntu:16.04
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
@@ -11289,25 +11479,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -11430,25 +11622,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -11582,25 +11776,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -11711,25 +11907,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
+        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -11871,27 +12069,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testsleep_sh} {testname}:/usr/bin/testsleep.sh"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} chmod 755 /usr/bin/testsleep.sh"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} useradd -u 1001 somebody -g nobody"
@@ -11994,27 +12194,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/{testsleep}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sx____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sx____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
+        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -12123,20 +12325,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 488
         logg.info("%s:%s %s", testname, testport, image)
-        # WHEN
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --basedetach --name={testname} {bsaeimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12197,20 +12401,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s:%s %s", testname, testport, image)
         psql = PSQL_TOOL
         PG = "/var/lib/pgsql/data"
-        # WHEN
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {bsaeimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12279,20 +12485,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 588
         ## logg.info("%s:%s %s", testname, testport, image)
-        # WHEN
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12340,19 +12548,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 588
         logg.info("%s:%s %s", testname, testport, image)
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable httpd"
@@ -12435,17 +12645,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 588
         logg.info("%s:%s %s", testname, port, image)
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
             sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y apache2"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12507,20 +12719,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s:%s %s", testname, testport, image)
         psql = PSQL_TOOL
         PG = "/var/lib/pgsql/data"
-        # WHEN
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
@@ -12596,20 +12810,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 588
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         # mariadb has a TimeoutSec=300 in the unit config:
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y mariadb"
         sh____(cmd.format(**locals()))
         if False:
@@ -12673,19 +12890,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 488
+        #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y rsyslog"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
@@ -12733,19 +12953,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 588
         logg.info("%s:%s %s", testname, testport, image)
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} yum install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable httpd"
@@ -12828,21 +13050,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 588
         logg.info("%s:%s %s", testname, testport, image)
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y epel-release"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y nginx"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable nginx"
@@ -12915,19 +13139,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 588
         logg.info("%s:%s %s", testname, port, image)
         #
+        baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
+        if image == baseimage:
+            cmd = "{docker} exec {testname} {refresh}"
+            sh____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+            sh____(cmd.format(**locals()))
+            if "python3" in python and python != "python3":
+                cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
+                sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
-        sh____(cmd.format(**locals()))
-        if "python3" in python and python != "python3":
-            cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
-            sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
         ## container = ip_container(testname)
