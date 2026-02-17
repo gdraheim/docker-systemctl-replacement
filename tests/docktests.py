@@ -12328,6 +12328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
@@ -12403,6 +12404,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos:7" not in image:
@@ -12490,6 +12492,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_7003_opensuse_syslog(self) -> None:
         """ WHEN using a systemd-enabled CentOS 7 ..."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or OPENSUSE)
         if "opensuse" not in image:
@@ -12553,6 +12556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and in the systemctl.debug.log we can see NOTIFY_SOCKET
             messages with Apache sending a READY and MAINPID value."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
@@ -12654,6 +12658,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or UBUNTU)
         if "ubuntu" not in image:
@@ -12725,6 +12730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             user-mode *.service files."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos:7" not in image:
@@ -12819,6 +12825,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # that mariadb's unit file is buggy, because it does not specify a kill
         # signal that it's mysqld_safe controller does not ignore.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
@@ -12902,7 +12909,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # this was based on a ";Requires=xy" line in the unit file
         # but our unit parser did not regard ";" as starting a comment
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        images = IMAGES
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
+       images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
             if SKIP: self.skipTest("centos-based test")
@@ -12962,6 +12970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_8011_centos_httpd_socket_notify(self) -> None:
         """ start/restart behaviour if a httpd has failed - issue #11 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
@@ -13059,6 +13068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_8031_centos_nginx_restart(self) -> None:
         """ start/restart behaviour if a nginx has failed - issue #31 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
@@ -13152,6 +13162,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_8034_testing_mask_unmask(self) -> None:
         """ Checking the issue 34 on Ubuntu """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or UBUNTU)
         docker = _docker
