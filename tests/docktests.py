@@ -127,6 +127,10 @@ def reply_tool() -> str:
     here = os.path.abspath(os.path.dirname(sys.argv[0]))
     return os.path.join(here, "reply.py")
 
+def norefresh_option(image: str) -> str:
+    if "opensuse" in image:
+        return "--no-refresh"
+    return ""
 def package_tool(image: str, checks: bool = False) -> str:
     if "opensuse" in image:
         if not checks:
@@ -2187,7 +2191,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -2582,7 +2587,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -5216,7 +5222,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -5630,7 +5637,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7211,7 +7219,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -7450,7 +7459,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
                 sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/socat || {package} {norefresh} install -y socat'"
         if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -10572,7 +10582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {bsaeimage} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
         if image == baseimage:
             cmd = "{docker} exec {testname} {refresh}"
@@ -10866,7 +10876,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         baseimage = self.build_baseimage(image, python)
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run --detach --name={testname} {bseimage} sleep {sometime}"
+        cmd = "{docker} run --detach --name={testname} {baseimage} sleep {sometime}"
         sh____(cmd.format(**locals()))
         if image == baseimage:
             cmd = "{docker} exec {testname} {refresh}"
@@ -11932,9 +11942,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "python3" in python and python != "python3":
                 cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
                 sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
@@ -12219,9 +12229,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "python3" in python and python != "python3":
                 cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
                 sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
+            if COVERAGE:
+                cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+                sh____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
@@ -12351,7 +12361,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12427,7 +12438,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12511,7 +12523,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y rsyslog"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y rsyslog"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12573,7 +12586,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y httpd httpd-tools"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl enable httpd"
         sh____(cmd.format(**locals()))
@@ -12668,7 +12682,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "python3" in python and python != "python3":
                 cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/python3 || ln -s {python} /usr/bin/python3'"
                 sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y apache2"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y apache2"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12745,7 +12760,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y postgresql-server postgresql-utils"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12837,7 +12853,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} yum install -y mariadb"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y mariadb"
         sh____(cmd.format(**locals()))
         if False:
             # expected in bug report but that one can not work:
@@ -12850,7 +12867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(cmd.format(**locals()))
         self.assertFalse(greps(out, "mysqld"))
         #
-        cmd = "{docker} exec {testname} yum install -y mariadb-server"
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y mariadb-server"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl list-unit-files --type=service"
         sh____(cmd.format(**locals()))
@@ -13164,7 +13181,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} {package} install -y rsyslog"
+        norefresh = norefresh_option(image)
+        cmd = "{docker} exec {testname} {package} {norefresh} install -y rsyslog"
         sh____(cmd.format(**locals()))
         ## container = ip_container(testname)
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
