@@ -1,12 +1,16 @@
 #! /usr/bin/env python3
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,line-too-long,too-many-lines,too-many-public-methods
-# pylint: disable=invalid-name,unspecified-encoding,consider-using-with
+# pylint: disable=invalid-name,unspecified-encoding,consider-using-with,multiple-statements
 """ testing functions directly in strip_python3 module """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "2.1.1071"
 
+from typing import Optional
 import sys
+import re
+import shutil
+import inspect
 import unittest
 import logging
 import os.path
@@ -16,6 +20,7 @@ logg = logging.getLogger(os.path.basename(__file__))
 
 SYSTEMCTL = "files/docker/systemctl3.py"
 TODO = 0
+KEEP = 0
 VV = "-vv"
 
 if __name__ == "__main__":
@@ -67,7 +72,62 @@ elif "tmp/systemctl" in SYSTEMCTL:
 else:
     raise ImportError(F"unknown src location {SYSTEMCTL}")
 
+def text_file(filename: str, content: str) -> None:
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    f = open(filename, "w")
+    if content.startswith("\n"):
+        x = re.match("(?s)\n( *)", content)
+        assert x is not None
+        indent = x.group(1)
+        for line in content[1:].split("\n"):
+            if line.startswith(indent):
+                line = line[len(indent):]
+            f.write(line+"\n")
+    else:
+        f.write(content)
+    f.close()
+    logg.info("::: made %s", filename)
+def get_caller_name() -> str:
+    currentframe = inspect.currentframe()
+    if not currentframe: return "global"
+    frame = currentframe.f_back.f_back # type: ignore[union-attr]
+    return frame.f_code.co_name # type: ignore[union-attr]
+def get_caller_caller_name() -> str:
+    currentframe = inspect.currentframe()
+    if not currentframe: return "global"
+    frame = currentframe.f_back.f_back.f_back # type: ignore[union-attr]
+    return frame.f_code.co_name # type: ignore[union-attr]
+
 class AppUnitTest(unittest.TestCase):
+    def caller_testname(self) -> str:
+        name = get_caller_caller_name()
+        x1 = name.find("_")
+        if x1 < 0: return name
+        x2 = name.find("_", x1+1)
+        if x2 < 0: return name
+        return name[:x2]
+    def testname(self, suffix: Optional[str] = None) -> str:
+        name = self.caller_testname()
+        if suffix:
+            return name + "_" + suffix
+        return name
+    def testdir(self, testname: Optional[str] = None, keep: bool = False) -> str:
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp."+testname
+        if os.path.isdir(newdir) and not keep:
+            shutil.rmtree(newdir)
+        if not os.path.isdir(newdir):
+            os.makedirs(newdir)
+        return newdir
+    def rm_testdir(self, testname: Optional[str] = None) -> str:
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp."+testname
+        if os.path.isdir(newdir):
+            if not KEEP:
+                shutil.rmtree(newdir)
+        return newdir
     def test_0100(self) -> None:
         n = app.to_int(0)
         y = app.to_int(1)
@@ -320,7 +380,18 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(have, want)
         back = app.unit_name_unescape(have)
         self.assertEqual(back, orig)
-
+    def test_0300(self) -> None:
+        tmp = self.testdir()
+        tmp1 = F"{tmp}/test1.service"
+        text_file(tmp1, """
+        [Unit]
+        Description = foo""")
+        unit = app.SystemctlUnitFiles()
+        unit.add_unit_sysd_file("test1.service", tmp1)
+        want = "foo"
+        have = unit.get_Description(unit.get_conf("test1.service"))
+        self.assertEqual(have, want)
+        self.rm_testdir()
 if __name__ == "__main__":
     # unittest.main()
     suite = unittest.TestSuite()
