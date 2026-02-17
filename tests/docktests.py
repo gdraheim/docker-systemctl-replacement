@@ -48,6 +48,7 @@ _python2 = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl3.py"
 _bin_sleep="/bin/sleep"
 COVERAGE = "" # make it an image name = detect_local_system()
+NIX = ""
 SKIP = True
 TODO = False
 KEEP = 0
@@ -72,6 +73,8 @@ TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04", "u
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
+LOCALPACKAGES = False
+REMOTEPACKAGES = False
 CENTOS = "almalinux:9.4"
 UBUNTU = "ubuntu:22.04"
 OPENSUSE = "opensuse/leap:15.6"
@@ -827,9 +830,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return self.start_mirror(image)
         return ""
     def start_mirror(self, image: str) -> str:
+        if REMOTEPACKAGES:
+            return image
         docker = _docker
         mirror = _mirror
-        cmd = "{mirror} start {image} --add-hosts"
+        local = " --local" if LOCALPACKAGES else NIX
+        cmd = "{mirror} start {image} --add-hosts{local}"
         out = output(cmd.format(**locals()))
         return decodes(out).strip()
     def drop_container(self, name: str) -> None:
@@ -13313,6 +13319,10 @@ if __name__ == "__main__":
                   help="enable the skipped IMAGE and PYTHON versions [%default])")
     _o.add_option("-C", "--chdir", metavar="PATH", default="",
                   help="change directory before running tests {%default}")
+    _o.add_option("--local", action="store_true", default=LOCALPACKAGES,
+                  help="only use local package mirrors [%default]")
+    _o.add_option("--remote", action="store_true", default=REMOTEPACKAGES,
+                  help="only use remote package mirrors [%default]")
     _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE,
                   help="OPENSUSE=%default")
     _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU,
@@ -13327,6 +13337,8 @@ if __name__ == "__main__":
     TODO = opt.todo
     KEEP = opt.keep
     #
+    LOCALPACKAGES = opt.local
+    REMOTEPACKAGES = opt.remote
     OPENSUSE = opt.opensuse
     UBUNTU = opt.ubuntu
     CENTOS = opt.centos

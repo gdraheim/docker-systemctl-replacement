@@ -328,7 +328,7 @@ class DockerBuildTest(unittest.TestCase):
             return "{add_hosts} {image}".format(**locals())
         return image
     def local_addhosts(self, dockerfile: str, extras: Optional[str]=None) -> str:
-        extras = "--local" if not extras and LOCALPACKAGES else ""
+        extras = extras or ""
         image = ""
         for line in open(dockerfile):
             m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
@@ -344,12 +344,13 @@ class DockerBuildTest(unittest.TestCase):
             return self.start_mirror(image, extras)
         return ""
     def start_mirror(self, image:str, extras: Optional[str]=None) -> str:
-        extras = "--local" if not extras and LOCALPACKAGES else ""
         if REMOTEPACKAGES:
             return ""
+        _local = " --local" if LOCALPACKAGES else ""
+        extras = extras or ""
         docker = _docker
         mirror = _mirror
-        cmd = "{mirror} start {image} --add-hosts {extras}"
+        cmd = "{mirror} start {image} --add-hosts {extras}{_local}"
         out = output(cmd.format(**locals()))
         return decodes_(out).strip()
     def drop_container(self, name: str) -> None:

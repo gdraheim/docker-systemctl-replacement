@@ -110,22 +110,30 @@ t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V $E --python=python$(notdir $@)
 # 'make test9' or 'make test_9*' if you want to testbuilds to use the unstripped python3 script (same as 'make build3')
 
+LOCALPACKAGES=
+ifeq ("$(wildcard /usr/lib/rpm/suse/macros)","/usr/lib/rpm/suse/macros")
+ifeq ("$(wildcard /dock/docker-mirror-packages/opensuse.15.6.disk)","/dock/docker-mirror-packages/opensuse.15.6.disk")
+LOCALPACKAGES=--local
+endif
+endif
 ESTCOVERAGE=--coverage --coverage
 st_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
 st_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
-st_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
-st_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
-st_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39)
+st_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39) $(LOCALPACKAGES)
+st_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39) $(LOCALPACKAGES)
+st_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39) $(LOCALPACKAGES)
+st_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "te$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep --python=$(PYTHON39) $(LOCALPACKAGES)
 est_1%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_2%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_3%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
 est_4%: ; rm -rf tmp/tmp.t$(notdir $@); $(EXECTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
-est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep
+est_5%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
+est_6%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
+est_7%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
+est_8%: ; rm -rf tmp/tmp.t$(notdir $@); $(DOCKTEST) "t$(notdir $@)" $(VV) $V $(ESTCOVERAGE) --keep $(LOCALPACKAGES)
+est_9%: ; $(MAKE) tmp/systemctl3.py; $(BUILD) "t$(notdir $@)" $(VV) $V --todo $(LOCALPACKAGES) --systemctl3=tmp/systemctl3.py # stripped
 test_0%: ; $(FUNCTEST) "$(notdir $@)" $(VV) $V
 test_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 test_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
@@ -135,7 +143,7 @@ test_5%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_6%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_7%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
 test_8%: ; $(DOCKTEST) "$(notdir $@)" $(VV) $V
-test_9%: ; $(MAKE) src/systemctl.py; $(BUILD) "$(notdir $@)" $(VV) $V --systemctl=src/systemctl.py
+test_9%: ; $(MAKE) src/systemctl3.py; $(BUILD) "$(notdir $@)" $(VV) $V --systemctl3=src/systemctl3.py
 real_1%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 real_2%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
 real_3%: ; $(EXECTEST) "$(notdir $@)" $(VV) $V
@@ -255,6 +263,7 @@ checkall2018:
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.0/test2 42.3/test2
 
+
 # with python2 being usually not available the coverage is actually just python3 tests now
 COVERAGETESTS = test
 COVERSRC=src/systemctl3.py
@@ -264,7 +273,7 @@ coverage:
 	touch $(COVERSRC)
 	$(PYTHON3) -m coverage run "--omit=$(FUNCTEST_PY)" $(FUNCTEST_PY) $(FUNCTEST_OPTIONS) --with=$(COVERSRC) && mv -v .coverage .coverage.0
 	$(EXECTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
-	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3)
+	$(DOCKTEST) $(VV) --coverage $(COVERAGETESTS) --with=$(COVERSRC) --python=$(PYTHON3) $(LOCALPACKAGES)
 	$(PYTHON3) -m coverage combine && $(PYTHON3) -m coverage report && $(PYTHON3) -m coverage annotate
 	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
 	ls -l $(COVERSRC),cover
@@ -278,7 +287,7 @@ coverage0:
 	$(PYTHON3) -m coverage combine; $(PYTHON3) -m coverage report && $(PYTHON3) -m coverage annotate
 coverage2: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl.py # stripped
 coverage3: ; $(MAKE) coverage COVERAGESRC=tmp/systemctl3.py # stripped
-coverage9: ; $(MAKE) coverage PYTHON3=$(PYTHON39)
+coverage9: ; $(MAKE) coverage PYTHON3=$(PYTHON39) LOCALPACKAGES=--local
 
 # these should show different coverage percentage results
 coveragetest1: ; $(MAKE) coverage COVERAGETESTS=test_101*; 
