@@ -203,6 +203,7 @@ _all_common_enabled: List[str] = ["default.target", "multi-user.target", "remote
 _all_common_disabled: List[str] = ["graphical.target", "resue.target", "nfs-client.target"]
 
 target_requires = {"graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target"}
+target_alias = {"default.target": "multi-user.target", "timers.target": "sockets.target", "network.target": "basic.target"}
 
 _runlevel_mappings: Dict[str, str] = {} # the official list
 _runlevel_mappings["0"] = "poweroff.target"
@@ -284,6 +285,17 @@ def to_list(value: Union[str, List[str], Tuple[str], Tuple[str, ...], None]) -> 
     if isinstance(value, tuple):
         return list(value)
     return str(value or "").split(",")
+def wordlist(value: Iterable[str]) -> List[str]:
+    return list(_wordlist(value))
+def _wordlist(value: Iterable[str]) -> Iterator[str]:
+    for val in value:
+        if not val:
+            continue
+        for elem in val.split(" "):
+            name = elem.strip()
+            if not name:
+                continue
+            yield name
 def commalist(value: Iterable[str]) -> List[str]:
     return list(_commalist(value))
 def _commalist(value: Iterable[str]) -> Iterator[str]:
@@ -291,9 +303,10 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         if not val:
             continue
         for elem in val.strip().split(","):
-            if not elem.strip():
+            name = elem.strip()
+            if not name:
                 continue
-            yield elem
+            yield name
 def int_mode(value: str) -> Optional[int]:
     try:
         return int(value, 8)
@@ -1690,6 +1703,8 @@ class SystemctlUnitFiles:
         target_conf = self.default_conf(module)
         if module in target_requires:
             target_conf.set(Unit, "Requires", target_requires[module])
+        elif module in target_alias:
+            target_conf.set(Unit, "Requires", target_alias[module])
         return target_conf
     def get_target_list(self, module: str) -> List[str]:
         """ the Requires= in target units are only accepted if known """
@@ -1699,22 +1714,19 @@ class SystemctlUnitFiles:
         targets = [target]
         conf = self.get_target_conf(module)
         requires = conf.get(Unit, "Requires", "")
+        if requires in target_alias:
+            requires = target_alias[requires]
         while requires in target_requires:
             targets = [requires] + targets
             requires = target_requires[requires]
         logg.debug("the [%s] requires %s", module, targets)
         return targets
     def get_InstallTargets(self, conf: SystemctlConf, section: str = Install, default: Optional[str] = None) -> List[str]:
-        targets: List[str] = []
         if not conf:
-            return targets
-        for setting in conf.getlist(section, "WantedBy", [], True):
-            for elem in setting.split(" "):
-                target = elem.strip()
-                if target and target not in targets:
-                    targets += [ target ]
-        if not targets and default:
-            return [default]
+            return [default] if default else []
+        targets = wordlist(conf.getlist(section, "WantedBy", [], True))
+        if not targets:
+            return [default] if default else []
         return targets
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service, default: Optional[str] = None) -> float:
         timeout = conf.get(section, "TimeoutSec", default or strE(DefaultTimeoutStartSec))
@@ -2321,10 +2333,11 @@ class SystemctlUnitFiles:
     def syntax_check_enable(self, conf: SystemctlConf, section: str = Install) -> int:
         errors = 0
         unit = conf.name()
-        target = conf.get(section, "WantedBy", NIX)
-        if target and target not in target_requires:
-            logg.error("%s: [Install] WantedBy unknown: %s", unit, target)
-            logg.info(" must be in %s", list(target_requires.keys()))
+        targets = wordlist(conf.getlist(section, "WantedBy", []))
+        for target in targets:
+            if target not in target_requires and target not in target_alias:
+                logg.error("%s: [Install] WantedBy unknown: %s", unit, target)
+                logg.info(" must be in %s", list(target_requires.keys()))
             errors += 1
         return errors
     def syntax_check_service(self, conf: SystemctlConf, section: str = Service) -> int:
