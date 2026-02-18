@@ -2555,63 +2555,6 @@ class SystemctlUnitFiles:
             newcmd += [re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
         return newcmd
 
-class SystemctlListenThread(threading.Thread):
-    """ support LISTEN modules """
-    def __init__(self, systemctl: 'Systemctl') -> None:
-        threading.Thread.__init__(self, name="listen")
-        self.systemctl = systemctl
-        self.stopped = threading.Event()
-    def stop(self) -> None:
-        self.stopped.set()
-    def run(self) -> None:
-        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
-        READ_WRITE = READ_ONLY | select.POLLOUT
-        me = os.getpid()
-        logg.log(DEBUG_INITLOOP, "[%s] listen: new thread", me)
-        socketlist = self.systemctl.socketlist()
-        if not socketlist:
-            return
-        logg.log(DEBUG_INITLOOP, "[%s] listen: start thread", me)
-        listen = select.poll()
-        for sock in socketlist:
-            listen.register(sock, READ_ONLY)
-            sock.listen()
-            logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
-        timestamp = time.time()
-        while not self.stopped.is_set():
-            try:
-                sleep_sec = self.systemctl.loop_sleep - (time.time() - timestamp)
-                if sleep_sec < MinimumYield:
-                    sleep_sec = MinimumYield
-                sleeping = sleep_sec
-                while sleeping > 2:
-                    time.sleep(1) # accept signals atleast every second
-                    sleeping = self.systemctl.loop_sleep - (time.time() - timestamp)
-                    if sleeping < MinimumYield:
-                        sleeping = MinimumYield
-                        break
-                time.sleep(sleeping) # remainder waits less that 2 seconds
-                logg.log(DEBUG_INITLOOP, "[%s] listen: poll", me)
-                accepting = listen.poll(100) # milliseconds
-                logg.log(DEBUG_INITLOOP, "[%s] listen: poll (%s)", me, len(accepting))
-                for sock_fileno, event in accepting:
-                    for sock in socketlist:
-                        if sock.fileno() == sock_fileno:
-                            if not self.stopped.is_set():
-                                if self.systemctl.loop_lock.acquire():
-                                    logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
-                                    self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
-            except Exception as e:
-                logg.info("[%s] listen: interrupted >> %s", me, e)
-                raise
-        for sock in socketlist:
-            try:
-                listen.unregister(sock)
-                sock.close()
-            except OSError as e:
-                logg.warning("[%s] listen: close socket >> %s", me, e)
-        return
-
 class SystemctlStandardInpOutErr(NamedTuple):
     inp: TextIO
     out: TextIO
@@ -2831,6 +2774,63 @@ class SystemctlJournal:
             err.write(msg.strip())
             err.write("\n")
         return SystemctlStandardInpOutErr(inp, out, err)
+
+class SystemctlListenThread(threading.Thread):
+    """ support LISTEN modules """
+    def __init__(self, systemctl: 'Systemctl') -> None:
+        threading.Thread.__init__(self, name="listen")
+        self.systemctl = systemctl
+        self.stopped = threading.Event()
+    def stop(self) -> None:
+        self.stopped.set()
+    def run(self) -> None:
+        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
+        READ_WRITE = READ_ONLY | select.POLLOUT
+        me = os.getpid()
+        logg.log(DEBUG_INITLOOP, "[%s] listen: new thread", me)
+        socketlist = self.systemctl.socketlist()
+        if not socketlist:
+            return
+        logg.log(DEBUG_INITLOOP, "[%s] listen: start thread", me)
+        listen = select.poll()
+        for sock in socketlist:
+            listen.register(sock, READ_ONLY)
+            sock.listen()
+            logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
+        timestamp = time.time()
+        while not self.stopped.is_set():
+            try:
+                sleep_sec = self.systemctl.loop_sleep - (time.time() - timestamp)
+                if sleep_sec < MinimumYield:
+                    sleep_sec = MinimumYield
+                sleeping = sleep_sec
+                while sleeping > 2:
+                    time.sleep(1) # accept signals atleast every second
+                    sleeping = self.systemctl.loop_sleep - (time.time() - timestamp)
+                    if sleeping < MinimumYield:
+                        sleeping = MinimumYield
+                        break
+                time.sleep(sleeping) # remainder waits less that 2 seconds
+                logg.log(DEBUG_INITLOOP, "[%s] listen: poll", me)
+                accepting = listen.poll(100) # milliseconds
+                logg.log(DEBUG_INITLOOP, "[%s] listen: poll (%s)", me, len(accepting))
+                for sock_fileno, event in accepting:
+                    for sock in socketlist:
+                        if sock.fileno() == sock_fileno:
+                            if not self.stopped.is_set():
+                                if self.systemctl.loop_lock.acquire():
+                                    logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
+                                    self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
+            except Exception as e:
+                logg.info("[%s] listen: interrupted >> %s", me, e)
+                raise
+        for sock in socketlist:
+            try:
+                listen.unregister(sock)
+                sock.close()
+            except OSError as e:
+                logg.warning("[%s] listen: close socket >> %s", me, e)
+        return
 
 class Systemctl:
     """ emulation for systemctl commands """
