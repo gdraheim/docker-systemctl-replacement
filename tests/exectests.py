@@ -10960,7 +10960,7 @@ class SystemctlBaseTest(unittest.TestCase):
             scenario we test what happens if the lockfile is deleted in between."""
         self.begin()
         vv = "-vv"
-        removelockfile="-c REMOVE_LOCK_FILE=True -c DEBUG_FLOCK=True"
+        removelockfile="-c REMOVE_LOCK_FILE=True -c DEBUG_FLOCK=NOTE"
         timeouts = "-c MinimumTimeoutStartSec=7 -c MinimumTimeoutStopSec=7"
         testname = self.testname()
         testdir = self.testdir()
@@ -19390,7 +19390,7 @@ class SystemctlBaseTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME=NOTE" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -19503,7 +19503,7 @@ class SystemctlBaseTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME=NOTE" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -19619,7 +19619,7 @@ class SystemctlBaseTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         pid_max = reads("/proc/sys/kernel/pid_max").strip()
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (pid_max)
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME=NOTE" % (pid_max)
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))

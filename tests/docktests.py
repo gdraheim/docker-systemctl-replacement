@@ -12910,7 +12910,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # but our unit parser did not regard ";" as starting a comment
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if COVERAGE and SKIP: self.skipTest("does not provide additional coverage")
-       images = IMAGES
+        images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
         if "centos" not in image:
             if SKIP: self.skipTest("centos-based test")

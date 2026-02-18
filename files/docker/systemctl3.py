@@ -32,34 +32,30 @@ __version__: str = "1.7.1072"
 
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
-
-NEVER = False
-TRUE = True
-NIX = ""
-ALL = "*"
-DEBUG_AFTER: bool = False
-DEBUG_STATUS: bool = False
-DEBUG_BOOTTIME: bool = False
-DEBUG_INITLOOP: bool = False
-DEBUG_KILLALL: bool = False
-DEBUG_FLOCK = False
-DebugPrintResult = False
-TestListen = False
-TestAccept = False
-
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
 DONE = (logging.WARNING + logging.ERROR) // 2
 logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
+try:
+    NOTSET = logging.NOTSET
+except AttributeError:
+    NOTSET = 0
 
-def logg_debug_flock(msg: str, *args: Union[str, int]) -> None:
-    if DEBUG_FLOCK:
-        logg.debug(msg, *args) # pragma: no cover
-def logg_debug_after(msg: str, *args: Union[str, int]) -> None:
-    if DEBUG_AFTER:
-        logg.debug(msg, *args) # pragma: no cover
+NEVER = False
+TRUE = True
+NIX = ""
+ALL = "*"
+DEBUG_AFTER: int = NOTSET
+DEBUG_STATUS: int = NOTSET
+DEBUG_BOOTTIME: int = NOTSET
+DEBUG_INITLOOP: int = NOTSET
+DEBUG_KILLALL: int = NOTSET
+DEBUG_FLOCK: int = NOTSET
+DebugPrintResult = False
+TestListen = False
+TestAccept = False
 
 NOT_A_PROBLEM: int = 0   # FOUND_OK
 NOT_OK: int = 1          # FOUND_ERROR
@@ -1021,17 +1017,17 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in range(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg_debug_flock("[%s] %s trying %s _______ ", os.getpid(), delayed(attempt), lockname)
+                    logg.log(DEBUG_FLOCK, "[%s] %s trying %s _______ ", os.getpid(), delayed(attempt), lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg_debug_flock("[%s] %s %s got deleted, trying again", os.getpid(), delayed(attempt), lockname)
+                        logg.log(DEBUG_FLOCK, "[%s] %s %s got deleted, trying again", os.getpid(), delayed(attempt), lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
                     os.write(self.opened, content.encode("utf-8"))
-                    logg_debug_flock("[%s] %s holding lock on %s", os.getpid(), delayed(attempt), lockname)
+                    logg.log(DEBUG_FLOCK, "[%s] %s holding lock on %s", os.getpid(), delayed(attempt), lockname)
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096)
@@ -1228,25 +1224,25 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        logg_debug_after("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
+                        logg.log(DEBUG_AFTER, "  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        logg_debug_after("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
+                        logg.log(DEBUG_AFTER, "  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            logg_debug_after("done in check %s of %s", check, len(sortlist))
+            logg.log(DEBUG_AFTER, "done in check %s of %s", check, len(sortlist))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        logg_debug_after(".. %s", conf.name())
+        logg.log(DEBUG_AFTER, ".. %s", conf.name())
     for item in sortlist:
-        logg_debug_after("(%s) %s", item.rank, item.conf.name())
+        logg.log(DEBUG_AFTER, "(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, key = lambda item: -item.rank)
     for item in sortedlist:
-        logg_debug_after("[%s] %s", item.rank, item.conf.name())
+        logg.log(DEBUG_AFTER, "[%s] %s", item.rank, item.conf.name())
     return [item.conf for item in sortedlist]
 
 def read_env_file(filename: str, root: Optional[str] = NIX) -> Iterator[Tuple[str, str]]:
@@ -2527,13 +2523,11 @@ class SystemctlListenThread(threading.Thread):
         READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
         READ_WRITE = READ_ONLY | select.POLLOUT
         me = os.getpid()
-        if DEBUG_INITLOOP: # pragma: no cover
-            logg.info("[%s] listen: new thread", me)
+        logg.log(DEBUG_INITLOOP, "[%s] listen: new thread", me)
         socketlist = self.systemctl.socketlist()
         if not socketlist:
             return
-        if DEBUG_INITLOOP: # pragma: no cover
-            logg.info("[%s] listen: start thread", me)
+        logg.log(DEBUG_INITLOOP, "[%s] listen: start thread", me)
         listen = select.poll()
         for sock in socketlist:
             listen.register(sock, READ_ONLY)
@@ -2553,11 +2547,9 @@ class SystemctlListenThread(threading.Thread):
                         sleeping = MinimumYield
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[%s] listen: poll", me)
+                logg.log(DEBUG_INITLOOP, "[%s] listen: poll", me)
                 accepting = listen.poll(100) # milliseconds
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[%s] listen: poll (%s)", me, len(accepting))
+                logg.log(DEBUG_INITLOOP, "[%s] listen: poll (%s)", me, len(accepting))
                 for sock_fileno, event in accepting:
                     for sock in socketlist:
                         if sock.fileno() == sock_fileno:
@@ -2939,8 +2931,7 @@ class Systemctl:
                     return self.path_proc_started(proc)
             except OSError as e: # pragma: no cover
                 logg.warning("boottime - could not access %s >> %s", proc, e)
-        if DEBUG_BOOTTIME:
-            logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
+        logg.log(DEBUG_BOOTTIME, " boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         return self.get_boottime_from_old_proc()
     def get_boottime_from_old_proc(self) -> float:
         booted = time.time()
@@ -2973,8 +2964,7 @@ class Systemctl:
         clkTickInt = os.sysconf_names['SC_CLK_TCK']
         clockTicksPerSec = os.sysconf(clkTickInt)
         started_secs = float(started_ticks) / clockTicksPerSec
-        if DEBUG_BOOTTIME:
-            logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
+        logg.log(DEBUG_BOOTTIME, "  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
         # this value is the start time from the host system
 
         # Variant 1:
@@ -2984,14 +2974,12 @@ class Systemctl:
         file_uptime.close()
         uptime_data = data_uptime.decode().split()
         uptime_secs = float(uptime_data[0])
-        if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+        logg.log(DEBUG_BOOTTIME, "  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
 
         # get time now
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
-        if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
+        logg.log(DEBUG_BOOTTIME, "  BOOT 1. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
 
         # Variant 2:
         system_stat = _proc_sys_stat
@@ -3001,12 +2989,10 @@ class Systemctl:
                 assert isinstance(line, bytes)
                 if line.startswith(b"btime"):
                     system_btime = float(line.decode().split()[1])
-        if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
+        logg.log(DEBUG_BOOTTIME, "  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
 
         started_btime = system_btime + started_secs
-        if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
+        logg.log(DEBUG_BOOTTIME, "  BOOT 2. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
 
         # return started_time
         return started_btime
@@ -3017,14 +3003,12 @@ class Systemctl:
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
         if filetime >= boottime:
-            if DEBUG_BOOTTIME:
-                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
-                logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
+            logg.log(DEBUG_BOOTTIME, "  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
+            logg.log(DEBUG_BOOTTIME, "  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
-        if DEBUG_BOOTTIME:
-            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
-            logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
+            logg.log(DEBUG_BOOTTIME, "  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
+            logg.log(DEBUG_BOOTTIME, "  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
             shutil_truncate(filename)
         except OSError as e:
             logg.warning("while truncating >> %s", e)
@@ -6544,8 +6528,7 @@ class Systemctl:
         lasttime= time.monotonic()
         while True:
             try:
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("DONE InitLoop (sleep %ss)", self.loop_sleep)
+                logg.log(DEBUG_INITLOOP, "DONE InitLoop (sleep %ss)", self.loop_sleep)
                 sleep_sec = self.loop_sleep - (time.monotonic() - lasttime)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
@@ -6559,14 +6542,11 @@ class Systemctl:
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 lasttime = time.monotonic()
                 self.loop_lock.acquire()
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[init] NEXT (after %ss)", sleep_sec)
+                logg.log(DEBUG_INITLOOP, "[init] NEXT (after %ss)", sleep_sec)
                 self.read_log_files(units)
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[init] reap zombies - check current processes")
+                logg.log(DEBUG_INITLOOP, "[init] reap zombies - check current processes")
                 running = self.reap_zombies()
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[init] reap zombies - init-loop found %s running procs", running)
+                logg.log(DEBUG_INITLOOP, "[init] reap zombies - init-loop found %s running procs", running)
                 if self.exit_mode & EXIT_NO_SERVICES_LEFT:
                     active = []
                     for unit in units:
@@ -6757,33 +6737,28 @@ class Systemctl:
                         cmdline = _proc_pid_cmdline.format(**locals())
                         with open(cmdline) as f:
                             cmd = f.read().split("\0")
-                        if DEBUG_KILLALL:
-                            logg.debug("cmdline %s", cmd)
+                        logg.log(DEBUG_KILLALL, "cmdline %s", cmd)
                         found = None
                         cmd_exe = os.path.basename(cmd[0])
-                        if DEBUG_KILLALL:
-                            logg.debug("cmd.exe '%s'", cmd_exe)
+                        logg.log(DEBUG_KILLALL, "cmd.exe '%s'", cmd_exe)
                         if fnmatch.fnmatchcase(cmd_exe, target):
                             found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"):
                             nonoption = 1 # atleast skip over '-u' unbuffered
                             while nonoption < len(cmd) and cmd[nonoption].startswith("-"): nonoption += 1
                             cmd_arg = os.path.basename(cmd[nonoption])
-                            if DEBUG_KILLALL:
-                                logg.debug("cmd.arg '%s'", cmd_arg)
+                            logg.log(DEBUG_KILLALL, "cmd.arg '%s'", cmd_arg)
                             if fnmatch.fnmatchcase(cmd_arg, target):
                                 found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
                                 x = cmd.index("--")
                                 if x > 0 and x+1 < len(cmd):
                                     cmd_run = os.path.basename(cmd[x+1])
-                                    if DEBUG_KILLALL:
-                                        logg.debug("cmd.run '%s'", cmd_run)
+                                    logg.log(DEBUG_KILLALL, "cmd.run '%s'", cmd_run)
                                     if fnmatch.fnmatchcase(cmd_run, target):
                                         found = "run"
                         if found:
-                            if DEBUG_KILLALL:
-                                logg.debug("%s found %s %s", found, pid, [c for c in cmd])
+                            logg.log(DEBUG_KILLALL, "%s found %s %s", found, pid, [c for c in cmd])
                             if pid != os.getpid():
                                 logg.debug(" kill -%s %s # %s", sig, pid, target)
                                 os.kill(pid, sig)
@@ -7244,7 +7219,12 @@ def main() -> int:
                 logg.debug("... MinimumYield=%s", MinimumYield)
             elif isinstance(old, int):
                 logg.debug("int %s=%s", nam, val)
-                globals()[nam] = int(val)
+                intvalues = {"NO": 0, "no": 0, "FALSE": 0, "false": 0, "TRUE": 1, "true": 1, "YES": 1, "yes": 1}
+                intvalues.update({"DEBUG": logging.DEBUG, "HINT": HINT, "INFO": logging.INFO, "NOTE": NOTE})
+                if val in intvalues:
+                    globals()[nam] = intvalues[val]
+                else:
+                    globals()[nam] = int(val)
                 logg.debug("... InitLoopSleep=%s", InitLoopSleep)
             elif isinstance(old, str):
                 logg.debug("str %s=%s", nam, val)
