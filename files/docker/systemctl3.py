@@ -32,11 +32,11 @@ __version__: str = "1.7.1072"
 
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
-LOOK = (logging.DEBUG + logging.NOTSET) // 2
+TRACE = (logging.DEBUG + logging.NOTSET) // 2
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
 DONE = (logging.WARNING + logging.ERROR) // 2
-logging.addLevelName(LOOK, "LOOK") # instead of a FINE level
+logging.addLevelName(TRACE, "TRACE")
 logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
@@ -47,11 +47,11 @@ NIX = ""
 ALL = "*"
 DEBUG_AFTER: int = logging.NOTSET
 DEBUG_STATUS: int = logging.NOTSET
-DEBUG_BOOTTIME: int = LOOK
+DEBUG_BOOTTIME: int = TRACE
 DEBUG_INITLOOP: int = logging.NOTSET
 DEBUG_KILLALL: int = logging.NOTSET
 DEBUG_FLOCK: int = logging.NOTSET
-DEBUG_EXPAND: int = LOOK
+DEBUG_EXPAND: int = TRACE
 INFO_EXPAND: int = logging.INFO
 DebugPrintResult = False
 TestListen = False
@@ -7274,7 +7274,7 @@ def main() -> int:
             elif isinstance(old, int):
                 logg.debug("int %s=%s", nam, val)
                 intvalues = {"NO": 0, "no": 0, "FALSE": 0, "false": 0, "TRUE": 1, "true": 1, "YES": 1, "yes": 1}
-                intvalues.update({"LOOK": LOOK, "DEBUG": logging.DEBUG, "HINT": HINT, "INFO": logging.INFO, "NOTE": NOTE })
+                intvalues.update({"TRACE": TRACE, "DEBUG": logging.DEBUG, "HINT": HINT, "INFO": logging.INFO, "NOTE": NOTE })
                 if val in intvalues:
                     globals()[nam] = intvalues[val]
                 else:
