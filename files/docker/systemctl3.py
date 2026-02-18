@@ -635,6 +635,12 @@ def _pid_zombie(pid: int) -> bool:
         return False
     return False
 
+def get_unit_type(module: str) -> Optional[str]:
+    name, ext = os.path.splitext(module)
+    if ext in [".service", ".socket", ".target"]:
+        return ext[1:]
+    return None
+
 def checkprefix(cmd: str) -> Tuple[str, str]:
     prefix = ""
     for i, c in enumerate(cmd):
@@ -1337,6 +1343,8 @@ class SystemctlUnitFiles:
         self._file_for_sysv = {} # name.service => /etc/init.d/name
         self._file_for_unit = {} # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
+    def os_path(self, path: str) -> str:
+        return os_path(self._root, path)
     def user(self) -> str:
         return self._user_getlogin
     def user_mode(self) -> bool:
@@ -1414,7 +1422,7 @@ class SystemctlUnitFiles:
             for folder in self.unit_file_folders():
                 if not folder:
                     continue
-                folder = os_path(self._root, folder)
+                folder = self.os_path(folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -1432,7 +1440,7 @@ class SystemctlUnitFiles:
             for folder in self.init_folders():
                 if not folder:
                     continue
-                folder = os_path(self._root, folder)
+                folder = self.os_path(folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -1517,7 +1525,7 @@ class SystemctlUnitFiles:
         for folder in self.unit_file_folders():
             if not folder:
                 continue
-            folder = os_path(self._root, folder)
+            folder = self.os_path(folder)
             override_d = os_path(folder, basename_d)
             if not os.path.isdir(override_d):
                 continue
@@ -1688,7 +1696,7 @@ class SystemctlUnitFiles:
         if self.user_mode():
             folders = self.user_folders()
         for folder1 in folders:
-            folder = os_path(self._root, folder1)
+            folder = self.os_path(folder1)
             if not os.path.isdir(folder):
                 continue
             for filename in os.listdir(folder):
@@ -1835,8 +1843,8 @@ class SystemctlUnitFiles:
             GROUP_ID = get_GROUP_ID(root) # getegid()            # 0
             SHELL = get_SHELL(root)       # $SHELL               # "/bin/sh"
             # confs["b"] = boot_ID
-            confs["C"] = os_path(self._root, CACHE) # Cache directory root
-            confs["E"] = os_path(self._root, ETC)   # Configuration directory root
+            confs["C"] = self.os_path(CACHE) # Cache directory root
+            confs["E"] = self.os_path(ETC)   # Configuration directory root
             confs["F"] = strE(conf.filename())      # EXTRA
             confs["f"] = "/%s" % xx(unit.instance or unit.prefix)
             confs["h"] = HOME                       # User home directory
@@ -1845,21 +1853,21 @@ class SystemctlUnitFiles:
             confs["I"] = xx(unit.instance)       # same as %i but escaping undone
             confs["j"] = yy(unit.component)      # final component of the prefix
             confs["J"] = xx(unit.component)      # unescaped final component
-            confs["L"] = os_path(self._root, LOG)
+            confs["L"] = self.os_path(LOG)
             # confs["m"] = machine_ID
             confs["n"] = yy(unit.fullname)         # Full unit name
             confs["N"] = yy(unit.name)             # Same as "%n", but with the type suffix removed.
             confs["p"] = yy(unit.prefix)           # before the first "@" or same as %n
             confs["P"] = xx(unit.prefix)           # same as %p but escaping undone
             confs["s"] = SHELL
-            confs["S"] = os_path(self._root, DAT)
-            confs["t"] = os_path(self._root, RUN)
-            confs["T"] = os_path(self._root, TMP)
+            confs["S"] = self.os_path(DAT)
+            confs["t"] = self.os_path(RUN)
+            confs["T"] = self.os_path(TMP)
             confs["g"] = GROUP
             confs["G"] = str(GROUP_ID)
             confs["u"] = USER
             confs["U"] = str(USER_ID)
-            confs["V"] = os_path(self._root, VARTMP)
+            confs["V"] = self.os_path(VARTMP)
             return confs
         def get_conf1(m: Match[str]) -> str:
             confs = get_confs(conf)
@@ -1921,7 +1929,7 @@ class SystemctlUnitFiles:
     def read_env_file(self, env_file: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
         mode, env_file = load_path(env_file)
-        real_file = os_path(self._root, env_file)
+        real_file = self.os_path(env_file)
         if not os.path.exists(real_file):
             if mode.check:
                 logg.error("file does not exist: %s", real_file)
@@ -1959,8 +1967,7 @@ class SystemctlUnitFiles:
                     if not folder:
                         continue
                     require_path = os.path.join(folder, unit + style)
-                    if self._root:
-                        require_path = os_path(self._root, require_path)
+                    require_path = self.os_path(require_path)
                     if os.path.isdir(require_path):
                         for required in os.listdir(require_path):
                             if required not in deps:
@@ -2096,8 +2103,7 @@ class SystemctlUnitFiles:
             for folder in self.preset_folders():
                 if not folder:
                     continue
-                if self._root:
-                    folder = os_path(self._root, folder)
+                folder = self.os_path(folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -2204,7 +2210,7 @@ class SystemctlUnitFiles:
             checklist = conf.getlist(section, spec)
             for checkfile in checklist:
                 mode, filename = checkprefix(checkfile)
-                filepath = os_path(self._root, filename)
+                filepath = self.os_path(filename)
                 found = len(glob.glob(filepath))
                 if found:
                     if "!" in mode:
@@ -2421,7 +2427,7 @@ class SystemctlUnitFiles:
         for env_file in conf.getlist(Service, "EnvironmentFile", []):
             if env_file.startswith("-"):
                 continue
-            if not os.path.isfile(os_path(self._root, self.expand_special(env_file, conf))):
+            if not os.path.isfile(self.os_path(self.expand_special(env_file, conf))):
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
@@ -2606,6 +2612,226 @@ class SystemctlListenThread(threading.Thread):
                 logg.warning("[%s] listen: close socket >> %s", me, e)
         return
 
+class SystemctlStandardInpOutErr(NamedTuple):
+    inp: TextIO
+    out: TextIO
+    err: TextIO
+
+class SystemctlJournal:
+    _log_file: Dict[str, int]
+    _log_hold: Dict[str, bytes]
+    _journal_log_folder: str
+    unitfiles: SystemctlUnitFiles
+    def __init__(self, unitfiles: SystemctlUnitFiles) -> None:
+        self.unitfiles = unitfiles
+        self._log_file = {}
+        self._log_hold = {}
+        self._journal_log_folder = _journal_log_folder
+    def start_log_files(self, units: List[str]) -> None:
+        self._log_file = {}
+        self._log_hold = {}
+        for unit in units:
+            conf = self.unitfiles.load_conf(unit)
+            if not conf:
+                continue
+            if self.skip_log(conf):
+                continue
+            log_path = self.get_log_from(conf)
+            try:
+                opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
+                self._log_file[unit] = opened
+                self._log_hold[unit] = b""
+            except OSError as e:
+                logg.error("can not open %s log: %s >> %s", unit, log_path, e)
+    def read_log_files(self, units: List[str]) -> None:
+        self.print_log_files(units)
+    def print_log_files(self, units: List[str], stdout: int = 1) -> int:
+        BUFSIZE = LOG_BUFSIZE
+        printed = 0
+        for unit in units:
+            if unit in self._log_file:
+                new_text = b""
+                while True:
+                    buf = os.read(self._log_file[unit], BUFSIZE)
+                    if not buf:
+                        break
+                    new_text += buf
+                    continue
+                text = self._log_hold[unit] + new_text
+                if not text:
+                    continue
+                lines = text.split(b"\n")
+                if not text.endswith(b"\n"):
+                    self._log_hold[unit] = lines[-1]
+                    lines = lines[:-1]
+                for line in lines:
+                    prefix = unit.encode("utf-8")
+                    content = prefix+b": "+line+b"\n"
+                    try:
+                        os.write(stdout, content)
+                        try:
+                            os.fsync(stdout)
+                        except OSError:
+                            pass
+                        printed += 1
+                    except BlockingIOError:
+                        pass
+        return printed
+    def stop_log_files(self, units: List[str]) -> None:
+        for unit in units:
+            try:
+                if unit in self._log_file:
+                    if self._log_file[unit]:
+                        os.close(self._log_file[unit])
+            except OSError as e:
+                logg.error("can not close log: %s >> %s", unit, e)
+        self._log_file = {}
+        self._log_hold = {}
+    def skip_log(self, conf: SystemctlConf) -> bool:
+        if get_unit_type(conf.name()) not in ["service"]:
+            return True
+        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
+        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        out, err = False, False
+        if std_out in ["null"]:
+            out = True
+        if std_out.startswith("file:"):
+            out = True
+        if std_err in ["inherit"]:
+            std_err = std_out
+        if std_err in ["null"]:
+            err = True
+        if std_err.startswith("file:"):
+            err = True
+        if std_err.startswith("append:"):
+            err = True
+        return out and err
+    def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
+        cmd_args: List[Union[str, bytes]] = []
+        log_path = self.get_log_from(conf)
+        if follow:
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.execvp(cmd_args[0], cmd_args)
+        elif lines:
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), log_path]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.execvp(cmd_args[0], cmd_args)
+        elif _no_pager:
+            cat_cmd = get_exist_path(CAT_CMDS)
+            if cat_cmd is None:
+                print("cat command not found")
+                return 1
+            cmd = [cat_cmd, log_path]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.execvp(cmd_args[0], cmd_args)
+        else:
+            less_cmd = get_exist_path(LESS_CMDS)
+            if less_cmd is None:
+                print("less command not found")
+                return 1
+            cmd = [less_cmd, log_path]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.execvp(cmd_args[0], cmd_args)
+    def get_log_from(self, conf: SystemctlConf) -> str:
+        return self.unitfiles.os_path(self.get_log(conf))
+    def get_log(self, conf: SystemctlConf) -> str:
+        """ /var/log/zzz.service.log or /var/log/default.unit.log """
+        filename = os.path.basename(strE(conf.filename()))
+        unitname = (conf.name() or "default")+".unit"
+        name = filename or unitname
+        log_folder = expand_path(self._journal_log_folder, conf.root_mode())
+        log_file = name.replace(os.path.sep, ".") + ".log"
+        if log_file.startswith("."):
+            log_file = "dot."+log_file
+        return os.path.join(log_folder, log_file)
+    def open_log(self, conf: SystemctlConf) -> TextIO:
+        log_file = self.get_log_from(conf)
+        log_folder = os.path.dirname(log_file)
+        if not os.path.isdir(log_folder):
+            os.makedirs(log_folder)
+        return open(os.path.join(log_file), "a")
+    def open_standard_log(self, conf: SystemctlConf) -> SystemctlStandardInpOutErr:
+        out: Optional[TextIO]
+        msg = ""
+        std_inp = conf.get(Service, "StandardInput", DefaultStandardInput)
+        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
+        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        inp, out, err = None, None, None
+        if std_inp in ["null"]:
+            inp = open(_dev_null, "r")
+        elif std_inp.startswith("file:"):
+            fname = std_inp[len("file:"):]
+            if os.path.exists(fname):
+                inp = open(fname, "r")
+            else:
+                inp = open(_dev_zero, "r")
+        else:
+            inp = open(_dev_zero, "r")
+        assert inp is not None
+        try:
+            if std_out in ["null"]:
+                out = open(_dev_null, "w")
+            elif std_out.startswith("file:"):
+                fname = std_out[len("file:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                out = open(fname, "w")
+            elif std_out.startswith("append:"):
+                fname = std_out[len("append:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                out = open(fname, "a")
+        except (OSError, IOError) as e:
+            msg += "\n%s >> %s" % (fname, e)
+        except Exception as e: # pylint: disable=broad-exception-caught
+            msg += "\n%s >> %s >> %s" % (fname, type(e), e)
+        if out is None:
+            out = self.open_log(conf)
+            err = out
+        assert out is not None
+        try:
+            if std_err in ["inherit"]:
+                err = out
+            elif std_err in ["null"]:
+                err = open(_dev_null, "w")
+            elif std_err.startswith("file:"):
+                fname = std_err[len("file:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                err = open(fname, "w")
+            elif std_err.startswith("append:"):
+                fname = std_err[len("append:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                err = open(fname, "a")
+        except (OSError, IOError) as e:
+            msg += "\n%s >> %s" % (fname, e)
+        if err is None:
+            err = self.open_log(conf)
+        assert err is not None
+        if msg:
+            err.write("ERROR:")
+            err.write(msg.strip())
+            err.write("\n")
+        return SystemctlStandardInpOutErr(inp, out, err)
+
 class Systemctl:
     """ emulation for systemctl commands """
     error: int
@@ -2624,13 +2850,11 @@ class Systemctl:
     _unit_type: Optional[str]
     _systemd_version: int
     _pid_file_folder: str
-    _journal_log_folder: str
     _default_target: str
     _sysinit_target: Optional[SystemctlConf]
     exit_mode: int
     init_mode: int
-    _log_file: Dict[str, int]
-    _log_hold: Dict[str, bytes]
+    journal: SystemctlJournal
     _boottime: Optional[float]
     _restarted_unit: Dict[str, List[float]]
     _restart_failed_units: Dict[str, float]
@@ -2657,15 +2881,12 @@ class Systemctl:
         self._only_type = commalist(_only_type)
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
-        self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None # stores a UnitConf()
         self.exit_mode = EXIT_MODE or 0
         self.init_mode = INIT_MODE or 0
-        self._log_file = {} # init-loop
-        self._log_hold = {} # init-loop
         self._boottime = None # cache self.get_boottime()
         self._restarted_unit = {}
         self._restart_failed_units = {}
@@ -2673,13 +2894,9 @@ class Systemctl:
         self.loop_sleep = max(1, InitLoopSleep // INIT_MODE) if INIT_MODE else InitLoopSleep
         self.loop_lock = threading.Lock()
         self.unitfiles = SystemctlUnitFiles(self._root)
-    def get_unit_type(self, module: str) -> Optional[str]:
-        name, ext = os.path.splitext(module)
-        if ext in [".service", ".socket", ".target"]:
-            return ext[1:]
-        return None
+        self.journal = SystemctlJournal(self.unitfiles) # init-loop
     def get_unit_section(self, module: str, default: str = Service) -> str:
-        return string.capwords(self.get_unit_type(module) or default)
+        return string.capwords(get_unit_type(module) or default)
     def get_unit_section_from(self, conf: SystemctlConf, default: str = Service) -> str:
         return self.get_unit_section(conf.name(), default)
     def list_service_units(self, *modules: str) -> List[Tuple[str, str, str]]: # -> [ (unit,loaded+active+substate,description) ]
@@ -2727,7 +2944,7 @@ class Systemctl:
         result: Dict[str, Optional[SystemctlConf]] = {}
         enabled: Dict[str, str] = {}
         for unit in self.unitfiles.match_units(to_list(modules)):
-            if self._only_type and self.get_unit_type(unit) not in self._only_type:
+            if self._only_type and get_unit_type(unit) not in self._only_type:
                 continue
             result[unit] = None
             enabled[unit] = ""
@@ -3474,64 +3691,7 @@ class Systemctl:
         conf = self.unitfiles.load_conf(unit)
         if not conf:
             return -1
-        return self.log_unit_from(conf, lines, follow)
-    def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
-        cmd_args: List[Union[str, bytes]] = []
-        log_path = self.get_journal_log_from(conf)
-        if follow:
-            tail_cmd = get_exist_path(TAIL_CMDS)
-            if tail_cmd is None:
-                print("tail command not found")
-                return 1
-            cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.execvp(cmd_args[0], cmd_args)
-        elif lines:
-            tail_cmd = get_exist_path(TAIL_CMDS)
-            if tail_cmd is None:
-                print("tail command not found")
-                return 1
-            cmd = [tail_cmd, "-n", str(lines or 10), log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.execvp(cmd_args[0], cmd_args)
-        elif _no_pager:
-            cat_cmd = get_exist_path(CAT_CMDS)
-            if cat_cmd is None:
-                print("cat command not found")
-                return 1
-            cmd = [cat_cmd, log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.execvp(cmd_args[0], cmd_args)
-        else:
-            less_cmd = get_exist_path(LESS_CMDS)
-            if less_cmd is None:
-                print("less command not found")
-                return 1
-            cmd = [less_cmd, log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.execvp(cmd_args[0], cmd_args)
-    def get_journal_log_from(self, conf: SystemctlConf) -> str:
-        return os_path(self._root, self.get_journal_log(conf))
-    def get_journal_log(self, conf: SystemctlConf) -> str:
-        """ /var/log/zzz.service.log or /var/log/default.unit.log """
-        filename = os.path.basename(strE(conf.filename()))
-        unitname = (conf.name() or "default")+".unit"
-        name = filename or unitname
-        log_folder = expand_path(self._journal_log_folder, conf.root_mode())
-        log_file = name.replace(os.path.sep, ".") + ".log"
-        if log_file.startswith("."):
-            log_file = "dot."+log_file
-        return os.path.join(log_folder, log_file)
-    def open_journal_log(self, conf: SystemctlConf) -> TextIO:
-        log_file = self.get_journal_log_from(conf)
-        log_folder = os.path.dirname(log_file)
-        if not os.path.isdir(log_folder):
-            os.makedirs(log_folder)
-        return open(os.path.join(log_file), "a")
+        return self.journal.log_unit_from(conf, lines, follow)
     def chdir_workingdir(self, conf: SystemctlConf) -> Union[str, bool, None]:
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
@@ -4267,101 +4427,15 @@ class Systemctl:
         if "LANG" not in locale:
             env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
         return env
-    def skip_journal_log(self, conf: SystemctlConf) -> bool:
-        if self.get_unit_type(conf.name()) not in ["service"]:
-            return True
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
-        out, err = False, False
-        if std_out in ["null"]:
-            out = True
-        if std_out.startswith("file:"):
-            out = True
-        if std_err in ["inherit"]:
-            std_err = std_out
-        if std_err in ["null"]:
-            err = True
-        if std_err.startswith("file:"):
-            err = True
-        if std_err.startswith("append:"):
-            err = True
-        return out and err
-    def dup2_journal_log(self, conf: SystemctlConf) -> None:
-        out: Optional[TextIO]
-        msg = ""
-        std_inp = conf.get(Service, "StandardInput", DefaultStandardInput)
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
-        inp, out, err = None, None, None
-        if std_inp in ["null"]:
-            inp = open(_dev_null, "r")
-        elif std_inp.startswith("file:"):
-            fname = std_inp[len("file:"):]
-            if os.path.exists(fname):
-                inp = open(fname, "r")
-            else:
-                inp = open(_dev_zero, "r")
-        else:
-            inp = open(_dev_zero, "r")
-        assert inp is not None
-        try:
-            if std_out in ["null"]:
-                out = open(_dev_null, "w")
-            elif std_out.startswith("file:"):
-                fname = std_out[len("file:"):]
-                fdir = os.path.dirname(fname)
-                if not os.path.exists(fdir):
-                    os.makedirs(fdir)
-                out = open(fname, "w")
-            elif std_out.startswith("append:"):
-                fname = std_out[len("append:"):]
-                fdir = os.path.dirname(fname)
-                if not os.path.exists(fdir):
-                    os.makedirs(fdir)
-                out = open(fname, "a")
-        except (OSError, IOError) as e:
-            msg += "\n%s >> %s" % (fname, e)
-        except Exception as e: # pylint: disable=broad-exception-caught
-            msg += "\n%s >> %s >> %s" % (fname, type(e), e)
-        if out is None:
-            out = self.open_journal_log(conf)
-            err = out
-        assert out is not None
-        try:
-            if std_err in ["inherit"]:
-                err = out
-            elif std_err in ["null"]:
-                err = open(_dev_null, "w")
-            elif std_err.startswith("file:"):
-                fname = std_err[len("file:"):]
-                fdir = os.path.dirname(fname)
-                if not os.path.exists(fdir):
-                    os.makedirs(fdir)
-                err = open(fname, "w")
-            elif std_err.startswith("append:"):
-                fname = std_err[len("append:"):]
-                fdir = os.path.dirname(fname)
-                if not os.path.exists(fdir):
-                    os.makedirs(fdir)
-                err = open(fname, "a")
-        except (OSError, IOError) as e:
-            msg += "\n%s >> %s" % (fname, e)
-        if err is None:
-            err = self.open_journal_log(conf)
-        assert err is not None
-        if msg:
-            err.write("ERROR:")
-            err.write(msg.strip())
-            err.write("\n")
-        if EXEC_DUP2:
-            os.dup2(inp.fileno(), sys.stdin.fileno())
-            os.dup2(out.fileno(), sys.stdout.fileno())
-            os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf: SystemctlConf, cmd: List[str], env: Dict[str, str]) -> NoReturn:
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get(Service, "Type", "simple").lower()
         # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
-        self.dup2_journal_log(conf)
+        std = self.journal.open_standard_log(conf)
+        if EXEC_DUP2:
+            os.dup2(std.inp.fileno(), sys.stdin.fileno())
+            os.dup2(std.out.fileno(), sys.stdout.fileno())
+            os.dup2(std.err.fileno(), sys.stderr.fileno())
         cmd_args: List[Union[str, bytes]] = []
         #
         runuser = self.unitfiles.get_User(conf)
@@ -5960,8 +6034,8 @@ class Systemctl:
         yield "UnitFileState", self.enabled_from(conf)
         yield "StatusFile", self.get_StatusFile(conf)
         yield "StatusFilePath", self.get_status_file_from(conf)
-        yield "JournalFile", self.get_journal_log(conf)
-        yield "JournalFilePath", self.get_journal_log_from(conf)
+        yield "JournalFile", self.journal.get_log(conf)
+        yield "JournalFilePath", self.journal.get_log_from(conf)
         yield "NotifySocket", self.get_notify_socket_from(conf)
         yield "User", self.unitfiles.get_User(conf) or ""
         yield "Group", self.unitfiles.get_Group(conf) or ""
@@ -6366,65 +6440,13 @@ class Systemctl:
         logg.info("-- init is done")
         return done # and not missing
     def start_log_files(self, units: List[str]) -> None:
-        self._log_file = {}
-        self._log_hold = {}
-        for unit in units:
-            conf = self.unitfiles.load_conf(unit)
-            if not conf:
-                continue
-            if self.skip_journal_log(conf):
-                continue
-            log_path = self.get_journal_log_from(conf)
-            try:
-                opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
-                self._log_file[unit] = opened
-                self._log_hold[unit] = b""
-            except OSError as e:
-                logg.error("can not open %s log: %s >> %s", unit, log_path, e)
+        self.journal.start_log_files(units)
     def read_log_files(self, units: List[str]) -> None:
         self.print_log_files(units)
     def print_log_files(self, units: List[str], stdout: int = 1) -> int:
-        BUFSIZE = LOG_BUFSIZE
-        printed = 0
-        for unit in units:
-            if unit in self._log_file:
-                new_text = b""
-                while True:
-                    buf = os.read(self._log_file[unit], BUFSIZE)
-                    if not buf:
-                        break
-                    new_text += buf
-                    continue
-                text = self._log_hold[unit] + new_text
-                if not text:
-                    continue
-                lines = text.split(b"\n")
-                if not text.endswith(b"\n"):
-                    self._log_hold[unit] = lines[-1]
-                    lines = lines[:-1]
-                for line in lines:
-                    prefix = unit.encode("utf-8")
-                    content = prefix+b": "+line+b"\n"
-                    try:
-                        os.write(stdout, content)
-                        try:
-                            os.fsync(stdout)
-                        except OSError:
-                            pass
-                        printed += 1
-                    except BlockingIOError:
-                        pass
-        return printed
+        return self.journal.print_log_files(units, stdout)
     def stop_log_files(self, units: List[str]) -> None:
-        for unit in units:
-            try:
-                if unit in self._log_file:
-                    if self._log_file[unit]:
-                        os.close(self._log_file[unit])
-            except OSError as e:
-                logg.error("can not close log: %s >> %s", unit, e)
-        self._log_file = {}
-        self._log_hold = {}
+        return self.journal.stop_log_files(units)
 
     def restart_failed_units(self, units: List[str], maximum: Optional[int] = None) -> List[str]:
         """ This function will restart failed units.
