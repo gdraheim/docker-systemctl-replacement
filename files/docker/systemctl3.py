@@ -51,6 +51,8 @@ DEBUG_BOOTTIME: int = LOOK
 DEBUG_INITLOOP: int = logging.NOTSET
 DEBUG_KILLALL: int = logging.NOTSET
 DEBUG_FLOCK: int = logging.NOTSET
+DEBUG_EXPAND: int = LOOK
+INFO_EXPAND: int = logging.INFO
 DebugPrintResult = False
 TestListen = False
 TestAccept = False
@@ -1288,7 +1290,7 @@ def read_env_file(filename: str, root: Optional[str] = NIX) -> Iterator[Tuple[st
                     yield m.group(1), m.group(2)
                     continue
     except OSError as e:
-        logg.info("while reading %s >> %s", filename, e)
+        logg.log(INFO_EXPAND, "while reading %s >> %s", filename, e)
 
 class SystemctlUnitFiles:
     """ database of loaded unit descriptors and expansion helpers for them. """
@@ -1851,12 +1853,12 @@ class SystemctlUnitFiles:
             confs = get_confs(conf)
             if m.group(1) in confs:
                 return confs[m.group(1)]
-            logg.warning("can not expand %%%s", m.group(1))
+            logg.log(INFO_EXPAND, "can not expand %%%s", m.group(1))
             return ""
         result = ""
         if cmd:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-            # ++# logg.info("expanded => %s", result)
+            logg.log(DEBUG_EXPAND, "expanded => %s", result)
         return result
     def extra_vars(self) -> List[str]:
         return self._extra_vars # from command line
@@ -1872,11 +1874,11 @@ class SystemctlUnitFiles:
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
-                    logg.info("override %s=%s", name, value)
+                    logg.log(INFO_EXPAND, "override %s=%s", name, value)
                     env[name] = self.expand_env(value, env)
             else:
                 for name, value in self.read_env_part(extra):
-                    logg.info("override %s=%s", name, value)
+                    logg.log(INFO_EXPAND, "override %s=%s", name, value)
                     env[name] = value # a '$word' is not special here
         return env
     def expand_env(self, cmd: str, env: Dict[str, str]) -> str:
@@ -1885,14 +1887,14 @@ class SystemctlUnitFiles:
             if name in env:
                 return env[name]
             namevar = "$%s" % name
-            logg.debug("can not expand %s", namevar)
+            logg.log(DEBUG_EXPAND, "can not expand %s", namevar)
             return (EXPAND_KEEP_VARS and namevar or "")
         def get_env2(m: Match[str]) -> str:
             name = m.group(1)
             if name in env:
                 return env[name]
             namevar = "${%s}" % name
-            logg.debug("can not expand %s", namevar)
+            logg.log(DEBUG_EXPAND, "can not expand %s", namevar)
             return (EXPAND_KEEP_VARS and namevar or "")
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
@@ -1912,7 +1914,7 @@ class SystemctlUnitFiles:
             if mode.check:
                 logg.error("file does not exist: %s", real_file)
             else:
-                logg.debug("file does not exist: %s", real_file)
+                logg.log(DEBUG_EXPAND, "file does not exist: %s", real_file)
             return
         for name, value in read_env_file(env_file, self._root):
             yield name, value
@@ -1933,7 +1935,7 @@ class SystemctlUnitFiles:
                     name, value = part.split("=", 1)
                     yield name, value
         except OSError as e:
-            logg.info("while reading %s >> %s", env_part, e)
+            logg.log(INFO_EXPAND, "while reading %s >> %s", env_part, e)
     def get_dependencies_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str, str]:
         styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                             ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
@@ -2519,13 +2521,13 @@ class SystemctlUnitFiles:
             name = m.group(1)
             if name in env:
                 return env[name]
-            logg.debug("can not expand $%s", name)
+            logg.log(DEBUG_EXPAND, "can not expand $%s", name)
             return ""  # empty string
         def get_env2(m: Match[str]) -> str:
             name = m.group(1)
             if name in env:
                 return env[name]
-            logg.debug("can not expand $%s}}", name)
+            logg.log(DEBUG_EXPAND, "can not expand $%s}}", name)
             return ""  # empty string
         cmd3 = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd: List[str] = []
