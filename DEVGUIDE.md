@@ -130,7 +130,10 @@ examples in tests that are run by `testbuilds.py`.
 * `make checkall` # dockertests with variants of image versions
 * `make package` # for pypi (shorthand `make pkg`)
 * `make coverage`
+  * combines coverage from functests + exectests + docktests
   * update `README.md` with the result percentage
+  * optionally run `make coverage9` to support development
+  * optionally run `make coverage3` to check strip_python3 result
 * edit `RELEASENOTES.md`
 * `make version` # implant a version representing the day of release
 * `git push` # and check for the workflow results on github

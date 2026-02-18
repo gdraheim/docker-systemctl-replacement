@@ -1146,9 +1146,7 @@ def time_to_seconds(text: str, maximum: float) -> float:
                 continue
             try:
                 value += int(val)
-            except ValueError: 
-                logg.info("z = %s", max(1, len(item[:-1].strip())))
-                logg.info("zz = %s", pow(10, max(1, len(item[:-1].strip()))))
+            except ValueError:
                 value += (pow(10, len(val)) -1)
         else:
             val = item
@@ -7192,7 +7190,7 @@ def main() -> int:
                   help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
-    logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
+    logg.setLevel(max(0, NOTE - 5 * opt.verbose))
     #
     _extra_vars = opt.extra_vars
     _force = opt.force
