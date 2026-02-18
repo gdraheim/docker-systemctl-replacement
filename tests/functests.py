@@ -390,6 +390,44 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(have, want)
         back = app.unit_name_unescape(have)
         self.assertEqual(back, orig)
+    def test_0230(self) -> None:
+        runs = os.environ.get("XDG_RUNTIME_DIR", "")
+        want = runs or "/tmp/run-"
+        have = app.get_runtime_dir()
+        logg.info("have %s", have)
+        self.assertTrue(have.startswith(want))
+    def test_0231(self) -> None:
+        runs = os.environ.get("XDG_RUNTIME_DIR", "")
+        want = runs or "/tmp/run-"
+        have = app.get_RUN()
+        logg.info("have %s", have)
+        self.assertTrue(have.startswith(want))
+    def test_0232(self) -> None:
+        want = "/tmp/run"
+        have = app.get_RUN(True)
+        logg.info("have %s", have)
+        self.assertTrue(have.startswith(want))
+    def test_0233(self) -> None:
+        runs = os.environ.get("XDG_RUNTIME_DIR", "")
+        want = runs or "/tmp/run-"
+        have = app.get_PID_DIR()
+        logg.info("have %s", have)
+        self.assertTrue(have.startswith(want))
+    def test_0234(self) -> None:
+        want = "/tmp/run"
+        have = app.get_PID_DIR(True)
+        logg.info("have %s", have)
+        self.assertTrue(have.startswith(want))
+    def test_0235(self) -> None:
+        home = os.path.expanduser("~")
+        have = app.get_HOME()
+        logg.info("have %s", have)
+        self.assertEqual(have, home)
+    def test_0236(self) -> None:
+        home = os.path.expanduser("~root")
+        have = app.get_HOME(True)
+        logg.info("have %s", have)
+        self.assertEqual(have, home)
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"
