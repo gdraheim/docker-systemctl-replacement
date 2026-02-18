@@ -6439,15 +6439,6 @@ class Systemctl:
         done = self.start_units(units, init = True)
         logg.info("-- init is done")
         return done # and not missing
-    def start_log_files(self, units: List[str]) -> None:
-        self.journal.start_log_files(units)
-    def read_log_files(self, units: List[str]) -> None:
-        self.print_log_files(units)
-    def print_log_files(self, units: List[str], stdout: int = 1) -> int:
-        return self.journal.print_log_files(units, stdout)
-    def stop_log_files(self, units: List[str]) -> None:
-        return self.journal.stop_log_files(units)
-
     def restart_failed_units(self, units: List[str], maximum: Optional[int] = None) -> List[str]:
         """ This function will restart failed units.
         /
@@ -6578,7 +6569,7 @@ class Systemctl:
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         result: Optional[str] = None
         #
-        self.start_log_files(units)
+        self.journal.start_log_files(units)
         logg.debug("[init] start listen")
         listen = SystemctlListenThread(self)
         logg.debug("[init] starts listen")
@@ -6603,7 +6594,7 @@ class Systemctl:
                 lasttime = time.monotonic()
                 self.loop_lock.acquire()
                 logg.log(DEBUG_INITLOOP, "[init] NEXT (after %ss)", sleep_sec)
-                self.read_log_files(units)
+                self.journal.read_log_files(units)
                 logg.log(DEBUG_INITLOOP, "[init] reap zombies - check current processes")
                 running = self.reap_zombies()
                 logg.log(DEBUG_INITLOOP, "[init] reap zombies - init-loop found %s running procs", running)
@@ -6650,9 +6641,9 @@ class Systemctl:
             logg.error("[init] loop_lock release %s >> %s", type(e), e)
         listen.stop()
         listen.join(2)
-        self.read_log_files(units)
-        self.read_log_files(units)
-        self.stop_log_files(units)
+        self.journal.read_log_files(units)
+        self.journal.read_log_files(units)
+        self.journal.stop_log_files(units)
         logg.debug("[init] done - init loop")
         return result
     def reap_zombies_target(self) -> str:
