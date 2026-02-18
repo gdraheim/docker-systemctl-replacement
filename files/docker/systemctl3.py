@@ -38,21 +38,17 @@ DONE = (logging.WARNING + logging.ERROR) // 2
 logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
-try:
-    NOTSET = logging.NOTSET
-except AttributeError:
-    NOTSET = 0
 
 NEVER = False
 TRUE = True
 NIX = ""
 ALL = "*"
-DEBUG_AFTER: int = NOTSET
-DEBUG_STATUS: int = NOTSET
-DEBUG_BOOTTIME: int = NOTSET
-DEBUG_INITLOOP: int = NOTSET
-DEBUG_KILLALL: int = NOTSET
-DEBUG_FLOCK: int = NOTSET
+DEBUG_AFTER: int = logging.NOTSET
+DEBUG_STATUS: int = logging.NOTSET
+DEBUG_BOOTTIME: int = logging.NOTSET
+DEBUG_INITLOOP: int = logging.NOTSET
+DEBUG_KILLALL: int = logging.NOTSET
+DEBUG_FLOCK: int = logging.NOTSET
 DebugPrintResult = False
 TestListen = False
 TestAccept = False
