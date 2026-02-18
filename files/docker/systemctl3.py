@@ -1890,7 +1890,7 @@ class SystemctlUnitFiles:
         for env_file in conf.getlist(Service, "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env) # but nonlazy expansion here
-        logg.debug("extra-vars %s", self.extra_vars())
+        logg.log(DEBUG_EXPAND, "extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
