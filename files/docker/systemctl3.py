@@ -2563,13 +2563,13 @@ class SystemctlStandardInpOutErr(NamedTuple):
 class SystemctlJournal:
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
-    _journal_log_folder: str
+    _log_folder: str
     unitfiles: SystemctlUnitFiles
     def __init__(self, unitfiles: Optional[SystemctlUnitFiles] = None) -> None:
         self.unitfiles = unitfiles or SystemctlUnitFiles(_root)
         self._log_file = {}
         self._log_hold = {}
-        self._journal_log_folder = _journal_log_folder
+        self._log_folder = _journal_log_folder
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
@@ -2695,7 +2695,7 @@ class SystemctlJournal:
         filename = os.path.basename(strE(conf.filename()))
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
-        log_folder = expand_path(self._journal_log_folder, conf.root_mode())
+        log_folder = expand_path(self._log_folder, conf.root_mode())
         log_file = name.replace(os.path.sep, ".") + ".log"
         if log_file.startswith("."):
             log_file = "dot."+log_file
