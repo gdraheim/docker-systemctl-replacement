@@ -2739,7 +2739,7 @@ class SystemctlJournal:
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
                 out = open(fname, "a")
-        except (OSError, IOError) as e:
+        except OSError as e:
             msg += "\n%s >> %s" % (fname, e)
         except Exception as e: # pylint: disable=broad-exception-caught
             msg += "\n%s >> %s >> %s" % (fname, type(e), e)
@@ -2764,7 +2764,7 @@ class SystemctlJournal:
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
                 err = open(fname, "a")
-        except (OSError, IOError) as e:
+        except OSError as e:
             msg += "\n%s >> %s" % (fname, e)
         if err is None:
             err = self.open_log(conf)
