@@ -2622,8 +2622,8 @@ class SystemctlJournal:
     _log_hold: Dict[str, bytes]
     _journal_log_folder: str
     unitfiles: SystemctlUnitFiles
-    def __init__(self, unitfiles: SystemctlUnitFiles) -> None:
-        self.unitfiles = unitfiles
+    def __init__(self, unitfiles: Optional[SystemctlUnitFiles] = None) -> None:
+        self.unitfiles = unitfiles or SystemctlUnitFiles(_root)
         self._log_file = {}
         self._log_hold = {}
         self._journal_log_folder = _journal_log_folder
