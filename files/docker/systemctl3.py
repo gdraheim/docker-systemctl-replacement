@@ -25,6 +25,7 @@ import collections
 import shlex
 import fnmatch
 import re
+from math import pow
 from types import TracebackType
 
 __copyright__: str = "(C) 2016-2026 Guido U. Draheim, licensed under the EUPL"
@@ -1119,20 +1120,47 @@ def time_to_seconds(text: str, maximum: float) -> float:
         if item == "infinity":
             return maximum
         if item.endswith("m"):
-            try: value += 60 * int(item[:-1])
-            except ValueError: pass # pragma: no cover
-        if item.endswith("min"):
-            try: value += 60 * int(item[:-3])
-            except ValueError: pass # pragma: no cover
+            val = item[:-1]
+            if not val:
+                continue
+            try:
+                value += 60 * int(val)
+            except ValueError:
+                value += 60 * (pow(10, len(val)) -1)
+        elif item.endswith("min"):
+            val = item[:-3]
+            if not val:
+                continue
+            try:
+                value += 60 * int(val)
+            except ValueError:
+                value += 60 * (pow(10, len(val)) -1)
         elif item.endswith("ms"):
-            try: value += int(item[:-2]) / 1000.
-            except ValueError: pass # pragma: no cover
+            val = item[:-2]
+            if not val:
+                continue
+            try:
+                value += int(val) / 1000.
+            except ValueError:
+                pass
         elif item.endswith("s"):
-            try: value += int(item[:-1])
-            except ValueError: pass # pragma: no cover
-        elif item:
-            try: value += int(item)
-            except ValueError: pass # pragma: no cover
+            val = item[:-1]
+            if not val:
+                continue
+            try:
+                value += int(val)
+            except ValueError: 
+                logg.info("z = %s", max(1, len(item[:-1].strip())))
+                logg.info("zz = %s", pow(10, max(1, len(item[:-1].strip()))))
+                value += (pow(10, len(val)) -1)
+        else:
+            val = item
+            if not val:
+                continue
+            try:
+                value += int(val)
+            except ValueError:
+                value += (pow(10, len(val)) -1)
     if value > maximum:
         return maximum
     if not value and text.strip() == "0":

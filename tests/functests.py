@@ -428,6 +428,48 @@ class AppUnitTest(unittest.TestCase):
         have = app.get_HOME(True)
         logg.info("have %s", have)
         self.assertEqual(have, home)
+    def test_0240(self) -> None:
+        want = 777
+        have = app.time_to_seconds("infinity", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+    def test_0241(self) -> None:
+        want = 111
+        have = app.time_to_seconds("111", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+        have = app.time_to_seconds("111s", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+        have = app.time_to_seconds("111 s", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+        have = app.time_to_seconds("999 s", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 777)
+        have = app.time_to_seconds("xxs", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 99)
+    def test_0242(self) -> None:
+        want = 6660
+        have = app.time_to_seconds("111min", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+        have = app.time_to_seconds("111m", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, want)
+        have = app.time_to_seconds("111 m", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 111) # TODO
+        have = app.time_to_seconds("9999 m", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 7777)
+        have = app.time_to_seconds("xxmin", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 99*60)
+        have = app.time_to_seconds("xxm", 7777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 99*60)
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"
