@@ -1,6 +1,6 @@
 FROM almalinux:9.4
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.7.1072"
+      __version__="1.7.1073"
 
 ###################################################################
 ### WARNING: tomcat-webapps was removed from CENTOS 8 (07/2020) ###

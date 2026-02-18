@@ -28,7 +28,7 @@ import re
 from types import TracebackType
 
 __copyright__: str = "(C) 2016-2026 Guido U. Draheim, licensed under the EUPL"
-__version__: str = "1.7.1072"
+__version__: str = "1.7.1073"
 
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
