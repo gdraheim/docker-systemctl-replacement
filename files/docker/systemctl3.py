@@ -4427,15 +4427,18 @@ class Systemctl:
         if "LANG" not in locale:
             env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
         return env
-    def execve_from(self, conf: SystemctlConf, cmd: List[str], env: Dict[str, str]) -> NoReturn:
-        """ this code is commonly run in a child process // returns exit-code"""
-        runs = conf.get(Service, "Type", "simple").lower()
-        # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
+    def dup2_journal_log(self, conf: SystemctlConf) -> None:
         std = self.journal.open_standard_log(conf)
         if EXEC_DUP2:
             os.dup2(std.inp.fileno(), sys.stdin.fileno())
             os.dup2(std.out.fileno(), sys.stdout.fileno())
             os.dup2(std.err.fileno(), sys.stderr.fileno())
+        # implicit: std.inp.close(), std.out.close(), std.err.close()
+    def execve_from(self, conf: SystemctlConf, cmd: List[str], env: Dict[str, str]) -> NoReturn:
+        """ this code is commonly run in a child process // returns exit-code"""
+        runs = conf.get(Service, "Type", "simple").lower()
+        # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
+        self.dup2_journal_log(conf)
         cmd_args: List[Union[str, bytes]] = []
         #
         runuser = self.unitfiles.get_User(conf)
