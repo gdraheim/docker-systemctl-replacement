@@ -25,7 +25,6 @@ import collections
 import shlex
 import fnmatch
 import re
-from math import pow
 from types import TracebackType
 
 __copyright__: str = "(C) 2016-2026 Guido U. Draheim, licensed under the EUPL"
