@@ -2344,7 +2344,7 @@ class SystemctlUnitFiles:
             if target not in target_requires and target not in target_alias:
                 logg.error("%s: [Install] WantedBy unknown: %s", unit, target)
                 logg.info(" must be in %s", list(target_requires.keys()))
-            errors += 1
+                errors += 1
         return errors
     def syntax_check_service(self, conf: SystemctlConf, section: str = Service) -> int:
         unit = conf.name()
