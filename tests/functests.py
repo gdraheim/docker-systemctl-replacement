@@ -696,7 +696,26 @@ class AppUnitTest(unittest.TestCase):
         have = app.time_to_seconds("min", 777)
         logg.info("have %s", have)
         self.assertEqual(have, 1)
-    def test_0250(self) -> None:
+    def test_0260(self) -> None:
+        have = app.pid_zombie(None) # type: ignore[arg-type]
+        logg.info("have %s", have)
+        self.assertFalse(have)
+        have = app.pid_zombie(-1)
+        logg.info("have %s", have)
+        self.assertFalse(have)
+        self.assertRaises(ValueError, lambda: app.pid_zombie(0))
+        have = app.pid_zombie(1)
+        logg.info("have %s", have)
+        self.assertFalse(have)
+        maxpid = int(open('/proc/sys/kernel/pid_max').read())
+        logg.info("maxpid %s", maxpid)
+        have = app.pid_zombie(maxpid+1)
+        logg.info("have %s", have)
+        self.assertFalse(have)
+        have = app.pid_zombie(os.getpid())
+        logg.info("have %s", have)
+        self.assertFalse(have)
+    def test_0270(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.txt"
         svc2 = "test2.txt"
@@ -708,7 +727,7 @@ class AppUnitTest(unittest.TestCase):
         have = app.get_exist_path([F"{tmp}/{svc2}",F"{tmp}/{svc1}"])
         self.assertEq(have, F"{tmp}/{svc1}")
         self.rm_testdir()
-    def test_0251(self) -> None:
+    def test_0271(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.txt"
         svc2 = "test2.txt"
