@@ -1,12 +1,12 @@
 #! /usr/bin/env python3
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,line-too-long,too-many-lines,too-many-public-methods
-# pylint: disable=invalid-name,unspecified-encoding,consider-using-with,multiple-statements
+# pylint: disable=invalid-name,unspecified-encoding,consider-using-with,multiple-statements,explicit-any
 """ testing functions directly in strip_python3 module """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "2.1.1073"
 
-from typing import Optional
+from typing import Optional, Any
 import sys
 import re
 import shutil
@@ -21,6 +21,7 @@ logg = logging.getLogger(os.path.basename(__file__))
 SYSTEMCTL = "files/docker/systemctl3.py"
 TODO = 0
 KEEP = 0
+NIX = ""
 VV = "-vv"
 
 if __name__ == "__main__":
@@ -111,6 +112,8 @@ def execmode(val: app.ExecMode) -> str:
     return "+".join(bits)
 
 class AppUnitTest(unittest.TestCase):
+    def assertEq(self, val1: Any, val2: Any, msg: str = NIX) -> None:
+        self.assertEqual(val2, val1, msg)
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
         x1 = name.find("_")
@@ -325,21 +328,54 @@ class AppUnitTest(unittest.TestCase):
         b2 = app.commalist(["a,b", ""])
         c1 = app.commalist(["a,b", "c"])
         c2 = app.commalist(["a,b", "", "c"])
-        self.assertEqual(n1, [])
-        self.assertEqual(n2, [])
-        self.assertEqual(n3, [])
-        self.assertEqual(n4, [])
-        self.assertEqual(x1, [])
-        self.assertEqual(x2, [])
-        self.assertEqual(x3, [])
-        self.assertEqual(x4, [])
-        self.assertEqual(a1, ["a"])
-        self.assertEqual(a2, ["a"])
-        self.assertEqual(a3, ["a"])
-        self.assertEqual(b1, ["a", "b"])
-        self.assertEqual(b2, ["a", "b"])
-        self.assertEqual(c1, ["a", "b", "c"])
-        self.assertEqual(c2, ["a", "b", "c"])
+        self.assertEq(n1, [])
+        self.assertEq(n2, [])
+        self.assertEq(n3, [])
+        self.assertEq(n4, [])
+        self.assertEq(x1, [])
+        self.assertEq(x2, [])
+        self.assertEq(x3, [])
+        self.assertEq(x4, [])
+        self.assertEq(a1, ["a"])
+        self.assertEq(a2, ["a"])
+        self.assertEq(a3, ["a"])
+        self.assertEq(b1, ["a", "b"])
+        self.assertEq(b2, ["a", "b"])
+        self.assertEq(c1, ["a", "b", "c"])
+        self.assertEq(c2, ["a", "b", "c"])
+    def test_0124(self) -> None:
+        n1 = app.wordlist([""])
+        n2 = app.wordlist(["", ""])
+        n3 = app.wordlist([" "])
+        n4 = app.wordlist(["", " "])
+        x1 = app.wordlist([","])
+        x2 = app.wordlist([",", ","])
+        x3 = app.wordlist([", "])
+        x4 = app.wordlist([" ,", " , "])
+        a1 = app.wordlist(["a"])
+        a2 = app.wordlist(["a", ""])
+        a3 = app.wordlist(["a,", ","])
+        b1 = app.wordlist(["a b"])
+        b2 = app.wordlist(["a b", ""])
+        c1 = app.wordlist(["a b", "c"])
+        c2 = app.wordlist(["a b", "", "c"])
+        c3 = app.wordlist(["a b ", " ", "c "])
+        self.assertEq(n1, [])
+        self.assertEq(n2, [])
+        self.assertEq(n3, [])
+        self.assertEq(n4, [])
+        self.assertEq(x1, [','])
+        self.assertEq(x2, [',',','])
+        self.assertEq(x3, [','])
+        self.assertEq(x4, [',',','])
+        self.assertEq(a1, ["a"])
+        self.assertEq(a2, ["a"])
+        self.assertEq(a3, ['a,',','])
+        self.assertEq(b1, ["a", "b"])
+        self.assertEq(b2, ["a", "b"])
+        self.assertEq(c1, ["a", "b", "c"])
+        self.assertEq(c2, ["a", "b", "c"])
+        self.assertEq(c3, ["a", "b", "c"])
     def test_0130(self) -> None:
         n = app.fnmatched("a")
         z = app.fnmatched("a", "")
