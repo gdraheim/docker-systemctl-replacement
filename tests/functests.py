@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,line-too-long,too-many-lines,too-many-public-methods
-# pylint: disable=invalid-name,unspecified-encoding,consider-using-with,multiple-statements,explicit-any
+# pylint: disable=invalid-name,unspecified-encoding,consider-using-with,multiple-statements
 """ testing functions directly in strip_python3 module """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
@@ -112,7 +112,7 @@ def execmode(val: app.ExecMode) -> str:
     return "+".join(bits)
 
 class AppUnitTest(unittest.TestCase):
-    def assertEq(self, val1: Any, val2: Any, msg: str = NIX) -> None:
+    def assertEq(self, val1: Any, val2: Any, msg: str = NIX) -> None: # type: ignore[explicit-any]
         self.assertEqual(val2, val1, msg)
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
@@ -153,21 +153,33 @@ class AppUnitTest(unittest.TestCase):
         y = app.to_int("1")
         x = app.to_int("2")
         z = app.to_int("zz", 11)
+        d = app.to_int("1.1.1")
+        e = app.to_int("1.1.1", -1)
+        f = app.to_int(["wrong"]) # type: ignore[arg-type]
         self.assertEqual(n, 0)
         self.assertEqual(y, 1)
         self.assertEqual(x, 2)
         self.assertEqual(z, 11)
+        self.assertEqual(d, 0)
+        self.assertEqual(e, -1)
+        self.assertEqual(f, 0)
     def test_0105(self) -> None:
         n = app.to_intN(None, 11)
         m = app.to_intN("m", 11)
         x = app.to_intN("2")
         y = app.to_intN("1")
         z = app.to_intN("0")
+        d = app.to_intN("1.1.1")
+        e = app.to_intN("1.1.1", -1)
+        f = app.to_intN(["wrong"]) # type: ignore[arg-type]
         self.assertEqual(n, 11)
         self.assertEqual(m, 11)
         self.assertEqual(x, 2)
         self.assertEqual(y, 1)
         self.assertEqual(z, 0)
+        self.assertEqual(d, None)
+        self.assertEqual(e, -1)
+        self.assertEqual(f, None)
     def test_0109(self) -> None:
         n = app.int_mode("")
         x = app.int_mode("2")
@@ -175,12 +187,18 @@ class AppUnitTest(unittest.TestCase):
         z = app.int_mode("0")
         q = app.int_mode("qq")
         r = app.int_mode("11")
+        d = app.int_mode("1.1.1")
+        e = app.int_mode("1.1.1", -1)
+        f = app.int_mode(["wrong"]) # type: ignore[arg-type]
         self.assertEqual(n, None)
         self.assertEqual(x, 2)
         self.assertEqual(y, 1)
         self.assertEqual(z, 0)
         self.assertEqual(q, None)
         self.assertEqual(r, 9)
+        self.assertEqual(d, None)
+        self.assertEqual(e, -1)
+        self.assertEqual(f, None)
     def test_0110(self) -> None:
         n = app.strYes(None)
         x = app.strYes(False)

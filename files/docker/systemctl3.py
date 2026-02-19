@@ -270,12 +270,12 @@ def to_intN(value: Optional[str], default: Optional[int] = None) -> Optional[int
         return default
     try:
         return int(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return default
 def to_int(value: Union[str, int], default: int = 0) -> int:
     try:
         return int(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return default
 def to_list(value: Union[str, List[str], Tuple[str], Tuple[str, ...], None]) -> List[str]:
     if not value:
@@ -307,11 +307,11 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
             if not name:
                 continue
             yield name
-def int_mode(value: str) -> Optional[int]:
+def int_mode(value: str, default: Optional[int] = None) -> Optional[int]:
     try:
         return int(value, 8)
-    except ValueError:
-        return None # pragma: no cover
+    except (ValueError, TypeError):
+        return default
 def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
