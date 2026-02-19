@@ -321,19 +321,19 @@ def o22(part: str) -> str:
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
-    return part # pragma: no cover (is always str)
+    return part
 def o44(part: str) -> str:
     if isinstance(part, str):
         if len(part) <= 44:
             return part
         return part[:10] + "..." + part[-31:]
-    return part # pragma: no cover (is always str)
+    return part
 def o77(part: str) -> str:
     if isinstance(part, str):
         if len(part) <= 77:
             return part
         return part[:20] + "..." + part[-54:]
-    return part # pragma: no cover (is always str)
+    return part
 def delayed(attempt: int, suffix: str = ".") -> str:
     if not attempt:
         return "..%s" % (suffix)
