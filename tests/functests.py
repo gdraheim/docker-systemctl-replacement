@@ -530,6 +530,31 @@ class AppUnitTest(unittest.TestCase):
         have = app.time_to_seconds("xxm", 7777)
         logg.info("have %s", have)
         self.assertEqual(have, 99*60)
+    def test_0245(self) -> None:
+        have = app.os_path("","")
+        self.assertEq(have, "")
+        have = app.os_path("","y")
+        self.assertEq(have, "y")
+        have = app.os_path("x","")
+        self.assertEq(have, "")
+        have = app.os_path("x","y")
+        self.assertEq(have, "x/y")
+        have = app.os_path("x","/y")
+        self.assertEq(have, "x/y")
+        have = app.os_path("x","//y")
+        self.assertEq(have, "//y")
+    def test_0250(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.txt"
+        svc2 = "test2.txt"
+        text_file(F"{tmp}/{svc1}", """info""")
+        have = app.get_exist_path([svc1,svc2])
+        self.assertEq(have, None)
+        have = app.get_exist_path([F"{tmp}/{svc1}",F"{tmp}/{svc2}"])
+        self.assertEq(have, F"{tmp}/{svc1}")
+        have = app.get_exist_path([F"{tmp}/{svc2}",F"{tmp}/{svc1}"])
+        self.assertEq(have, F"{tmp}/{svc1}")
+        self.rm_testdir()
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"
