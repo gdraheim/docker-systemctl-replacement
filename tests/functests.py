@@ -242,9 +242,11 @@ class AppUnitTest(unittest.TestCase):
         s90 = "0123456789" * 9
         x20 = app.o22(s20)
         x90 = app.o22(s90)
-        self.assertEqual(x20, s20)
-        self.assertEqual(x90, "01234...67890123456789")
-        self.assertEqual(len(x90), 22)
+        xxx = app.o22(["x"])   # type: ignore[arg-type]
+        self.assertEq(x20, s20)
+        self.assertEq(x90, "01234...67890123456789")
+        self.assertEq(len(x90), 22)
+        self.assertEq(xxx, ["x"])
         n = app.o22(None) # type: ignore[arg-type]
         z = app.o22(0) # type: ignore[arg-type]
         self.assertEqual(n, None)
@@ -254,21 +256,25 @@ class AppUnitTest(unittest.TestCase):
         s90 = "0123456789" * 9
         x20 = app.o44(s20)
         x90 = app.o44(s90)
-        self.assertEqual(x20, s20)
-        self.assertEqual(x90, "0123456789...9012345678901234567890123456789")
-        self.assertEqual(len(x90), 44)
+        xxx = app.o44(["x"])   # type: ignore[arg-type]
+        self.assertEq(x20, s20)
+        self.assertEq(x90, "0123456789...9012345678901234567890123456789")
+        self.assertEq(len(x90), 44)
+        self.assertEq(xxx, ["x"])
         n = app.o44(None) # type: ignore[arg-type]
         z = app.o44(0) # type: ignore[arg-type]
-        self.assertEqual(n, None)
-        self.assertEqual(z, 0)
+        self.assertEq(n, None)
+        self.assertEq(z, 0)
     def test_0117(self) -> None:
         s20 = "0123456789" * 2
         s90 = "0123456789" * 9
         x20 = app.o77(s20)
         x90 = app.o77(s90)
-        self.assertEqual(x20, s20)
-        self.assertEqual(x90, "01234567890123456789...678901234567890123456789012345678901234567890123456789")
-        self.assertEqual(len(x90), 77)
+        xxx = app.o77(["x"])   # type: ignore[arg-type]
+        self.assertEq(x20, s20)
+        self.assertEq(x90, "01234567890123456789...678901234567890123456789012345678901234567890123456789")
+        self.assertEq(len(x90), 77)
+        self.assertEq(xxx, ["x"])
         n = app.o77(None) # type: ignore[arg-type]
         z = app.o77(0) # type: ignore[arg-type]
         self.assertEqual(n, None)
