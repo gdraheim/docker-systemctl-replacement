@@ -73,6 +73,9 @@ elif "tmp/systemctl" in SYSTEMCTL:
 else:
     raise ImportError(F"unknown src location {SYSTEMCTL}")
 
+def shell_file(filename: str, content: str) -> None:
+    text_file(filename, content)
+    os.chmod(filename, 0o775)
 def text_file(filename: str, content: str) -> None:
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
@@ -764,6 +767,77 @@ class AppUnitTest(unittest.TestCase):
         self.assertRaises(FileNotFoundError, files.user_folder)
         self.assertRaises(FileNotFoundError, files.system_folder)
         self.rm_testdir()
+    def test_0273(self) -> None:
+        tmp = self.testdir()
+        log1 = "test1.log"
+        log_file1 = F"{tmp}/{log1}"
+        text_file(log_file1, """
+        info
+        here""")
+        tail_cmd = F"{tmp}/tail.py"
+        shell_file(tail_cmd, """
+        #!/usr/bin/env python3
+        from optparse import OptionParser
+        cmdline = OptionParser("%prog")
+        cmdline.add_option("-F", "--follow", action="store_true")
+        cmdline.add_option("-n", "--lines", metavar="lines")
+        opt, args = cmdline.parse_args()
+        assert args
+        print(open(args[0]).read())
+        """)
+        app.logg.info("======== lines")
+        files = app.SystemctlUnitFiles(tmp)
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.tail_cmds = [tail_cmd]
+        x = journal.tail_log_file(log_file1, 1)
+        self.assertEq(x, 0)
+        app.logg.info("======== follow")
+        files = app.SystemctlUnitFiles(tmp)
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.tail_cmds = [tail_cmd]
+        x = journal.tail_log_file(log_file1, 1, True)
+        self.assertEq(x, 0)
+        app.logg.info("======== cat")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.no_pager = True
+        journal.less_cmds = [tail_cmd]
+        x = journal.tail_log_file(log_file1)
+        self.assertEq(x, 0)
+        app.logg.info("======== less")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.less_cmds = journal.cat_cmds
+        x = journal.tail_log_file(log_file1)
+        self.assertEq(x, 0)
+        app.logg.info("======== no less")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.less_cmds = []
+        x = journal.tail_log_file(log_file1)
+        self.assertEq(x, 1)
+        app.logg.info("======== no less")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.less_cmds = []
+        journal.no_pager = True
+        x = journal.tail_log_file(log_file1)
+        self.assertEq(x, 1)
+        app.logg.info("======== no tail")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.tail_cmds = []
+        x = journal.tail_log_file(log_file1, 1)
+        self.assertEq(x, 1)
+        app.logg.info("======== no follow")
+        journal = app.SystemctlJournal(files)
+        journal.exec_spawn = True
+        journal.tail_cmds = []
+        x = journal.tail_log_file(log_file1, 1, True)
+        self.assertEq(x, 1)
+        app.logg.info("======== DONE")
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"

@@ -2559,15 +2559,24 @@ class SystemctlStandardInpOutErr(NamedTuple):
     err: TextIO
 
 class SystemctlJournal:
+    unitfiles: SystemctlUnitFiles
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
     _log_folder: str
-    unitfiles: SystemctlUnitFiles
+    tail_cmds: List[str]
+    less_cmds: List[str]
+    cat_cmds: List[str]
+    no_pager: bool
     def __init__(self, unitfiles: Optional[SystemctlUnitFiles] = None) -> None:
         self.unitfiles = unitfiles or SystemctlUnitFiles(_root)
         self._log_file = {}
         self._log_hold = {}
         self._log_folder = _journal_log_folder
+        self.tail_cmds = TAIL_CMDS
+        self.less_cmds = LESS_CMDS
+        self.cat_cmds = CAT_CMDS
+        self.no_pager = _no_pager
+        self.exec_spawn = EXEC_SPAWN
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
@@ -2624,7 +2633,7 @@ class SystemctlJournal:
                 if unit in self._log_file:
                     if self._log_file[unit]:
                         os.close(self._log_file[unit])
-            except OSError as e:
+            except OSError as e: # pragma: no cover
                 logg.error("can not close log: %s >> %s", unit, e)
         self._log_file = {}
         self._log_hold = {}
@@ -2649,42 +2658,52 @@ class SystemctlJournal:
         return out and err
     def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
         cmd_args: List[Union[str, bytes]] = []
-        log_path = self.get_log_from(conf)
+        return self.tail_log_file(self.get_log_from(conf), lines, follow, conf.name())
+    def tail_log_file(self, log_path: str, lines: Optional[int] = None, follow: bool = False, unit: str = NIX) -> int:
         if follow:
-            tail_cmd = get_exist_path(TAIL_CMDS)
+            tail_cmd = get_exist_path(self.tail_cmds)
             if tail_cmd is None:
                 print("tail command not found")
                 return 1
             cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl %s -> %s", unit, cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
+            if self.exec_spawn:
+                return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
             return os.execvp(cmd_args[0], cmd_args)
         elif lines:
-            tail_cmd = get_exist_path(TAIL_CMDS)
+            tail_cmd = get_exist_path(self.tail_cmds)
+            logg.fatal("%s => %s", self.tail_cmds, tail_cmd)
             if tail_cmd is None:
                 print("tail command not found")
                 return 1
             cmd = [tail_cmd, "-n", str(lines or 10), log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl %s -> %s", unit, cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
+            if self.exec_spawn:
+                return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
             return os.execvp(cmd_args[0], cmd_args)
         elif _no_pager:
-            cat_cmd = get_exist_path(CAT_CMDS)
+            cat_cmd = get_exist_path(self.cat_cmds)
             if cat_cmd is None:
                 print("cat command not found")
                 return 1
             cmd = [cat_cmd, log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl %s -> %s", unit, cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
+            if self.exec_spawn:
+                return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
             return os.execvp(cmd_args[0], cmd_args)
         else:
-            less_cmd = get_exist_path(LESS_CMDS)
+            less_cmd = get_exist_path(self.less_cmds)
             if less_cmd is None:
                 print("less command not found")
                 return 1
             cmd = [less_cmd, log_path]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl %s -> %s", unit, cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
+            if self.exec_spawn:
+                return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
             return os.execvp(cmd_args[0], cmd_args)
     def get_log_from(self, conf: SystemctlConf) -> str:
         return self.unitfiles.os_path(self.get_log(conf))
