@@ -4,7 +4,7 @@
 """ testing functions directly in strip_python3 module """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "2.1.1073"
+__version__ = "2.1.1074"
 
 from typing import Optional, Any
 import sys
@@ -657,7 +657,12 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(have, 777)
         have = app.time_to_seconds("xxs", 777)
         logg.info("have %s", have)
-        self.assertEqual(have, 99)
+        have = app.time_to_seconds("s", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 1)
+        have = app.time_to_seconds("ms", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 1)
     def test_0242(self) -> None:
         want = 6660
         have = app.time_to_seconds("111min", 7777)
@@ -678,6 +683,12 @@ class AppUnitTest(unittest.TestCase):
         have = app.time_to_seconds("xxm", 7777)
         logg.info("have %s", have)
         self.assertEqual(have, 99*60)
+        have = app.time_to_seconds("m", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 1)
+        have = app.time_to_seconds("min", 777)
+        logg.info("have %s", have)
+        self.assertEqual(have, 1)
     def test_0250(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.txt"
