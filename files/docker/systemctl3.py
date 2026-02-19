@@ -635,8 +635,8 @@ def _pid_zombie(pid: int) -> bool:
 
 def get_unit_type(module: str) -> Optional[str]:
     name, ext = os.path.splitext(module)
-    if ext in [".service", ".socket", ".target"]:
-        return ext[1:]
+    if len(ext) > 5: # [".service", ".socket", ".target"]:
+        return ext[1:] # atleast 5 characters
     return None
 
 def checkprefix(cmd: str) -> Tuple[str, str]:
