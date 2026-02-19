@@ -461,33 +461,63 @@ class AppUnitTest(unittest.TestCase):
         want = runs or "/tmp/run-"
         have = app.get_RUN()
         logg.info("have %s", have)
-        self.assertTrue(have.startswith(want))
-    def test_0232(self) -> None:
         want = "/tmp/run"
         have = app.get_RUN(True)
         logg.info("have %s", have)
         self.assertTrue(have.startswith(want))
-    def test_0233(self) -> None:
+    def test_0232(self) -> None:
         runs = os.environ.get("XDG_RUNTIME_DIR", "")
         want = runs or "/tmp/run-"
         have = app.get_PID_DIR()
         logg.info("have %s", have)
         self.assertTrue(have.startswith(want))
-    def test_0234(self) -> None:
         want = "/tmp/run"
         have = app.get_PID_DIR(True)
         logg.info("have %s", have)
         self.assertTrue(have.startswith(want))
-    def test_0235(self) -> None:
+    def test_0233(self) -> None:
         home = os.path.expanduser("~")
         have = app.get_HOME()
         logg.info("have %s", have)
         self.assertEqual(have, home)
-    def test_0236(self) -> None:
         home = os.path.expanduser("~root")
         have = app.get_HOME(True)
         logg.info("have %s", have)
         self.assertEqual(have, home)
+    def test_0235(self) -> None:
+        have = app.is_good_root(None)
+        self.assertEq(have, True)
+        have = app.is_good_root("")
+        self.assertEq(have, True)
+        have = app.is_good_root("/")
+        self.assertEq(have, False)
+        have = app.is_good_root("/a")
+        self.assertEq(have, False)
+        have = app.is_good_root("/a/b")
+        self.assertEq(have, False)
+        have = app.is_good_root("/a/b/")
+        self.assertEq(have, False)
+        have = app.is_good_root("/a/b/c")
+        self.assertEq(have, True)
+        have = app.is_good_root("a/b")
+        self.assertEq(have, False)
+        have = app.is_good_root("a/b/")
+        self.assertEq(have, False)
+        have = app.is_good_root("a/b/c")
+        self.assertEq(have, True)
+    def test_0236(self) -> None:
+        have = app.os_path("","")
+        self.assertEq(have, "")
+        have = app.os_path("","y")
+        self.assertEq(have, "y")
+        have = app.os_path("x","")
+        self.assertEq(have, "")
+        have = app.os_path("x","y")
+        self.assertEq(have, "x/y")
+        have = app.os_path("x","/y")
+        self.assertEq(have, "x/y")
+        have = app.os_path("x","//y")
+        self.assertEq(have, "//y")
     def test_0240(self) -> None:
         want = 777
         have = app.time_to_seconds("infinity", 777)
@@ -530,19 +560,6 @@ class AppUnitTest(unittest.TestCase):
         have = app.time_to_seconds("xxm", 7777)
         logg.info("have %s", have)
         self.assertEqual(have, 99*60)
-    def test_0245(self) -> None:
-        have = app.os_path("","")
-        self.assertEq(have, "")
-        have = app.os_path("","y")
-        self.assertEq(have, "y")
-        have = app.os_path("x","")
-        self.assertEq(have, "")
-        have = app.os_path("x","y")
-        self.assertEq(have, "x/y")
-        have = app.os_path("x","/y")
-        self.assertEq(have, "x/y")
-        have = app.os_path("x","//y")
-        self.assertEq(have, "//y")
     def test_0250(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.txt"
@@ -555,6 +572,29 @@ class AppUnitTest(unittest.TestCase):
         have = app.get_exist_path([F"{tmp}/{svc2}",F"{tmp}/{svc1}"])
         self.assertEq(have, F"{tmp}/{svc1}")
         self.rm_testdir()
+    def test_0251(self) -> None:
+        tmp = self.testdir()
+        svc1 = "test1.txt"
+        svc2 = "test2.txt"
+        text_file(F"{tmp}/{svc1}", """info""")
+        size1 = os.path.getsize(F"{tmp}/{svc1}")
+        app.shutil_truncate(F"{tmp}/{svc1}")
+        size2 = os.path.getsize(F"{tmp}/{svc1}")
+        self.assertNotEqual(size1, size2)
+        self.assertEqual(size2, 0)
+        new1: Optional[int]
+        try:
+            new1 = os.path.getsize(F"{tmp}/{svc2}")
+        except OSError:
+            new1 = None
+        app.shutil_truncate(F"{tmp}/{svc2}")
+        new2 = os.path.getsize(F"{tmp}/{svc2}")
+        self.assertNotEqual(new1, new2)
+        self.assertEqual(new1, None)
+        self.assertEqual(new2, 0)
+        app.shutil_truncate(F"{tmp}/subdir/{svc2}")
+        sub2 = os.path.getsize(F"{tmp}/subdir/{svc2}")
+        self.assertEqual(sub2, 0)
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"
