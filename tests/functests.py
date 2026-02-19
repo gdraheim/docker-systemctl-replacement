@@ -750,6 +750,20 @@ class AppUnitTest(unittest.TestCase):
         app.shutil_truncate(F"{tmp}/subdir/{svc2}")
         sub2 = os.path.getsize(F"{tmp}/subdir/{svc2}")
         self.assertEqual(sub2, 0)
+    def test_0272(self) -> None:
+        tmp = self.testdir()
+        files = app.SystemctlUnitFiles(tmp)
+        want = os.path.expanduser("~/.config/systemd/user")
+        have = files.user_folder()
+        logg.info("have %s", have)
+        self.assertEq(have, want)
+        have = files.system_folder()
+        logg.info("have %s", have)
+        self.assertEq(have, "/etc/systemd/system")
+        files._SYSTEMD_UNIT_PATH = "" # pylint: disable=protected-access
+        self.assertRaises(FileNotFoundError, files.user_folder)
+        self.assertRaises(FileNotFoundError, files.system_folder)
+        self.rm_testdir()
     def test_0300(self) -> None:
         tmp = self.testdir()
         svc1 = "test1.service"
