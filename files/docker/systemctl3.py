@@ -372,14 +372,12 @@ def os_path(root: Optional[str], path: str) -> str:
     if path.startswith(os.path.sep):
         path1 = path[1:]
         if path1.startswith(os.path.sep):
-            if DEBUG_STATUS: # pragma: no cover
-                logg.debug("path starting with '//' is not moved to _root: %s", path)
+            logg.log(DEBUG_STATUS, "path starting with '//' is not moved to _root: %s", path)
             return path # real systemd accepts //paths as well
         else:
             return os.path.join(root, path1)
     else:
-        if DEBUG_STATUS: # pragma: no cover
-            logg.debug("adding _root prefix to path being not absolute: %s", path)
+        logg.log(DEBUG_STATUS, "adding _root prefix to path being not absolute: %s", path)
         return os.path.join(root, path)
 def path_replace_extension(path: str, old: str, new: str) -> str:
     if path.endswith(old):
@@ -3130,16 +3128,13 @@ class Systemctl:
         # if not status_file:
         #   return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS:
-                logg.debug("[status] no status file: %s\n returning %s", status_file, status)
+            logg.log(DEBUG_STATUS, "[status] no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            if DEBUG_STATUS:
-                logg.debug("[status] old status file: %s\n returning %s", status_file, status)
+            logg.log(DEBUG_STATUS, "[status] old status file: %s\n returning %s", status_file, status)
             return status
         try:
-            if DEBUG_STATUS:
-                logg.debug("reading %s", status_file)
+            logg.log(DEBUG_STATUS, "reading %s", status_file)
             with open(status_file) as f:
                 for line in f:
                     if line.strip():
@@ -5204,12 +5199,10 @@ class Systemctl:
         if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
-                if DEBUG_STATUS:
-                    logg.info("get_status_from %s => %s", conf.name(), state)
+                logg.log(DEBUG_STATUS, "get_status_from %s => %s", conf.name(), state)
                 return state
         pid = self.read_mainpid_from(conf)
-        if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
+        logg.log(DEBUG_STATUS, "pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -5261,8 +5254,7 @@ class Systemctl:
                 else:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf)
-        if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
+        logg.log(DEBUG_STATUS, "pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
