@@ -814,7 +814,7 @@ class SystemctlConfigParser(SystemctlConfData):
                     logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
                     includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                     if not os.path.isfile(includefile):
-                        raise FileNotFoundError("tried to include file that doesn't exist: %s" % includefile)
+                        raise FileNotFoundError(2, "tried to include file that doesn't exist", includefile)
                     self.read_unit_file(includefile)
                     continue
                 if line.startswith("["):
