@@ -1958,7 +1958,47 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_1099_errors_message_on_dot_include(self) -> None:
+    def test_1180_reading_drop_in_conf_and_testing_command_helper(self) -> None:
+        """ check that '.include' is accepted but marked deprecated"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zza.service.d/extra.conf"), """
+            [Service]
+            ExecStartPre=precheckA""")
+        cmd = "{systemctl} status zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        # self.assertEqual(end, 0)
+        cmd = "{systemctl} command zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual("runA", out.strip())
+        cmd = "{systemctl} command zza.service -p ExecStartPre"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual("precheckA", out.strip())
+        cmd = "{systemctl} command zzb.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual("", out.strip())
+        self.assertEqual(4, end)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_1190_reading_dot_include(self) -> None:
         """ check that '.include' is accepted but marked deprecated"""
         self.begin()
         testname = self.testname()
@@ -1987,9 +2027,38 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_1101_get_bad_command(self) -> None:
-        self.test_1101_bad_command(True)
-    def test_1101_bad_command(self, real: bool = False) -> None:
+    def test_1199_errors_message_on_dot_include(self) -> None:
+        """ check that '.include' is accepted and my be missing"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            .include /etc/systemd/system/zzmissing.service
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} status zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        # self.assertEqual(end, 0)
+        self.assertTrue(greps(err, r"deprecated"))
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def real_1201_get_bad_command(self) -> None:
+        self.test_1201_bad_command(True)
+    def test_1201_bad_command(self, real: bool = False) -> None:
         """ check that unknown commands work"""
         testname = self.testname()
         testdir = self.testdir()
@@ -2007,9 +2076,9 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def real_1111_default_command(self) -> None:
-        self.test_1111_default_command(True)
-    def test_1111_default_command(self, real: bool = False) -> None:
+    def real_1211_default_command(self) -> None:
+        self.test_1211_default_command(True)
+    def test_1211_default_command(self, real: bool = False) -> None:
         """ check that default commands work"""
         testname = self.testname()
         testdir = self.testdir()
@@ -2027,9 +2096,9 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def real_1201_get_default(self) -> None:
+    def real_1301_get_default(self) -> None:
         self.test_1201_get_default(True)
-    def test_1201_get_default(self, real: bool = False) -> None:
+    def test_1301_get_default(self, real: bool = False) -> None:
         """ check that get-default works"""
         testname = self.testname()
         testdir = self.testdir()
@@ -2046,9 +2115,9 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def real_1211_set_default(self) -> None:
-        self.test_1211_set_default(True)
-    def test_1211_set_default(self, real: bool = False) -> None:
+    def real_1311_set_default(self) -> None:
+        self.test_1311_set_default(True)
+    def test_1311_set_default(self, real: bool = False) -> None:
         """ check that set-default works"""
         testname = self.testname()
         testdir = self.testdir()
@@ -2093,7 +2162,7 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def test_1218_set_default_empty(self, real: bool = False) -> None:
+    def test_1318_set_default_empty(self, real: bool = False) -> None:
         """ check that set-default works with no runleven given"""
         testname = self.testname()
         testdir = self.testdir()
@@ -2111,7 +2180,7 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def test_1219_set_default_bad(self, real: bool = False) -> None:
+    def test_1319_set_default_bad(self, real: bool = False) -> None:
         """ check that set-default works with a bad runlevel"""
         testname = self.testname()
         testdir = self.testdir()
