@@ -1,6 +1,6 @@
 FROM almalinux:9.4
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.7.1074"
+      __version__="1.7.1075"
 
 ARG PASS=P@ssw0rd.788daa5d938373fe628f1dbe8d0c319c5606c4d3e857eb7
 ARG PYTHON_EXE=/usr/libexec/platform-python
