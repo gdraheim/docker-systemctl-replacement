@@ -768,6 +768,7 @@ class AppUnitTest(unittest.TestCase):
         self.assertRaises(FileNotFoundError, files.system_folder)
         self.rm_testdir()
     def test_0273(self) -> None:
+        """ same as test_373 but using Unitfiles """
         tmp = self.testdir()
         log1 = "test1.log"
         log_file1 = F"{tmp}/{log1}"
@@ -1031,6 +1032,47 @@ class AppUnitTest(unittest.TestCase):
             self.assertEqual(want, newcmd)
             self.assertEqual(mode, execmode(exe))
         self.rm_testdir()
+    def test_0373(self) -> None:
+        """ adding to test_273 but using Systemctl """
+        tmp = self.testdir()
+        svc1 = F"{tmp}/etc/systemd/system/test1.service"
+        os.makedirs(os.path.dirname(svc1))
+        text_file(svc1, """
+        [Service]
+        ExecStart = |@/usr/bin/true /usr/bin/false""")
+        systemctl = app.Systemctl(tmp)
+        conf = systemctl.unitfiles.get_conf("test1.service")
+        log_file1 = systemctl.journal.get_log_from(conf)
+        text_file(log_file1, """
+        info
+        here""")
+        tail_cmd = F"{tmp}/tail.py"
+        shell_file(tail_cmd, """
+        #!/usr/bin/env python3
+        from optparse import OptionParser
+        cmdline = OptionParser("%prog")
+        cmdline.add_option("-F", "--follow", action="store_true")
+        cmdline.add_option("-n", "--lines", metavar="lines")
+        opt, args = cmdline.parse_args()
+        assert args
+        print(open(args[0]).read())
+        """)
+        systemctl.journal.tail_cmds = [tail_cmd]
+        systemctl.journal.less_cmds = [tail_cmd]
+        systemctl.journal.cat_cmds = [tail_cmd]
+        systemctl.journal.exec_spawn = True
+        app.logg.info("======== less")
+        systemctl.log_units(["test1.service"])
+        app.logg.info("======== lines")
+        systemctl.log_units(["test1.service"], 100)
+        app.logg.info("======== follow")
+        systemctl.log_units(["test1.service"], 100, True)
+        app.logg.info("======== cat")
+        systemctl.journal.no_pager = True
+        systemctl.log_units(["test1.service"])
+        app.logg.info("======== module")
+        systemctl.log_modules("test1")
+        app.logg.info("======== DONE")
 
 if __name__ == "__main__":
     # unittest.main()

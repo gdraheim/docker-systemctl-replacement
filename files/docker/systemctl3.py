@@ -2880,7 +2880,8 @@ class Systemctl:
     loop_sleep: int
     loop_lock: threading.Lock
     unitfiles: SystemctlUnitFiles
-    def __init__(self) -> None:
+    def __init__(self, root: Optional[str] = None) -> None:
+        self._root = root or _root
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
         # from command line options or the defaults
         self._extra_vars = _extra_vars
@@ -2891,7 +2892,6 @@ class Systemctl:
         self._now = _now
         self._preset_mode = _preset_mode
         self._quiet = _quiet
-        self._root = _root
         self._show_all = _show_all
         self._only_what = commalist(_only_what) or [""]
         self._only_property = commalist(_only_property)
