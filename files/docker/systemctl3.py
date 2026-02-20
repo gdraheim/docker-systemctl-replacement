@@ -2563,6 +2563,7 @@ class SystemctlJournal:
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
     _log_folder: str
+    no_pager: bool
     tail_cmds: List[str]
     less_cmds: List[str]
     cat_cmds: List[str]
@@ -2670,7 +2671,7 @@ class SystemctlJournal:
             cmd_args = [arg for arg in cmd] # satisfy mypy
             if self.exec_spawn:
                 return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
-            return os.execvp(cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args) # pragma: no cover
         elif lines:
             tail_cmd = get_exist_path(self.tail_cmds)
             logg.fatal("%s => %s", self.tail_cmds, tail_cmd)
@@ -2682,8 +2683,8 @@ class SystemctlJournal:
             cmd_args = [arg for arg in cmd] # satisfy mypy
             if self.exec_spawn:
                 return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
-            return os.execvp(cmd_args[0], cmd_args)
-        elif _no_pager:
+            return os.execvp(cmd_args[0], cmd_args) # pragma: no cover
+        elif self.no_pager:
             cat_cmd = get_exist_path(self.cat_cmds)
             if cat_cmd is None:
                 print("cat command not found")
@@ -2693,7 +2694,7 @@ class SystemctlJournal:
             cmd_args = [arg for arg in cmd] # satisfy mypy
             if self.exec_spawn:
                 return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
-            return os.execvp(cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args) # pragma: no cover
         else:
             less_cmd = get_exist_path(self.less_cmds)
             if less_cmd is None:
@@ -2704,7 +2705,7 @@ class SystemctlJournal:
             cmd_args = [arg for arg in cmd] # satisfy mypy
             if self.exec_spawn:
                 return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
-            return os.execvp(cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args) # pragma: no cover
     def get_log_from(self, conf: SystemctlConf) -> str:
         return self.unitfiles.os_path(self.get_log(conf))
     def get_log(self, conf: SystemctlConf) -> str:

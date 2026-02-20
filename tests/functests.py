@@ -824,7 +824,7 @@ class AppUnitTest(unittest.TestCase):
         journal.less_cmds = []
         journal.no_pager = True
         x = journal.tail_log_file(log_file1)
-        self.assertEq(x, 1)
+        self.assertEq(x, 0)
         app.logg.info("======== no tail")
         journal = app.SystemctlJournal(files)
         journal.exec_spawn = True
