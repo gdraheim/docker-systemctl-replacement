@@ -53,7 +53,8 @@ DEBUG_KILLALL: int = logging.NOTSET
 DEBUG_FLOCK: int = logging.NOTSET
 DEBUG_EXPAND: int = logging.NOTSET
 INFO_EXPAND: int = logging.INFO
-DebugPrintResult = False
+DEBUG_RESULT: int = logging.NOTSET
+TRACE_RESULT: int = logging.NOTSET
 TestListen = False
 TestAccept = False
 
@@ -2567,7 +2568,6 @@ class SystemctlJournal:
     tail_cmds: List[str]
     less_cmds: List[str]
     cat_cmds: List[str]
-    no_pager: bool
     def __init__(self, unitfiles: Optional[SystemctlUnitFiles] = None) -> None:
         self.unitfiles = unitfiles or SystemctlUnitFiles(_root)
         self._log_file = {}
@@ -6937,58 +6937,47 @@ def print_begin2(args: List[str]) -> None:
     logg.debug("======= systemctl.py %s", " ".join(args))
 
 def is_not_ok(result: bool) -> int:
-    if DebugPrintResult:
-        logg.log(HINT, "EXEC END %s", result)
+    logg.log(DEBUG_RESULT, "EXEC END %s", result)
     if result is False:
         return NOT_OK
     return 0
 
 def print_str(result: Optional[str]) -> None:
     if result is None:
-        if DebugPrintResult:
-            logg.debug("    END %s", result)
+        logg.log(TRACE_RESULT, "     END %s", result)
         return
     print(result)
-    if DebugPrintResult:
-        result1 = result.split("\n")[0][:-20]
-        if result == result1:
-            logg.log(HINT, "EXEC END '%s'", result)
-        else:
-            logg.log(HINT, "EXEC END '%s...'", result1)
-            logg.debug("    END '%s'", result)
+    result1 = result.split("\n")[0][:-20]
+    logg.log(DEBUG_RESULT, "EXEC END '%s...'", result1)
+    logg.log(TRACE_RESULT, "     END '%s'", result)
 def print_str_list(result: Union[None, List[str]]) -> None:
     if result is None:
-        if DebugPrintResult:
-            logg.debug("    END %s", result)
+        logg.log(TRACE_RESULT, "    END %s", result)
         return
     shown = 0
     for element in result:
         print(element)
         shown += 1
-    if DebugPrintResult:
-        logg.log(HINT, "EXEC END %i items", shown)
-        logg.debug("    END %s", result)
+    logg.log(DEBUG_RESULT, "EXEC END %i items", shown)
+    logg.log(TRACE_RESULT, "     END %s", result)
 def print_str_list_list(result: Union[List[Tuple[str]], List[Tuple[str, str]], List[Tuple[str, str, str]]]) -> None:
     shown = 0
     for element in result:
         print("\t".join([str(elem) for elem in element]))
         shown += 1
-    if DebugPrintResult:
-        logg.log(HINT, "EXEC END %i items", shown)
-        logg.debug("    END %s", result)
+    logg.log(DEBUG_RESULT, "EXEC END %i items", shown)
+    logg.log(TRACE_RESULT, "     END %s", result)
 def print_str_dict(result: Union[None, Dict[str, str]]) -> None:
     if result is None:
-        if DebugPrintResult:
-            logg.debug("    END %s", result)
+        logg.log(TRACE_RESULT, "     END %s", result)
         return
     shown = 0
     for key in sorted(result.keys()):
         element = result[key]
         print("%s=%s" % (key, element))
         shown += 1
-    if DebugPrintResult:
-        logg.log(HINT, "EXEC END %i items", shown)
-        logg.debug("    END %s", result)
+    logg.log(DEBUG_RESULT, "EXEC END %i items", shown)
+    logg.log(TRACE_RESULT, "     END %s", result)
 
 def runcommand(command: str, *modules: str) -> int:
     systemctl = Systemctl()
