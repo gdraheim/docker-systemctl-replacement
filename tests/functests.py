@@ -818,13 +818,13 @@ class AppUnitTest(unittest.TestCase):
         journal.less_cmds = []
         x = journal.tail_log_file(log_file1)
         self.assertEq(x, 1)
-        app.logg.info("======== no less")
+        app.logg.info("======== no cat")
         journal = app.SystemctlJournal(files)
         journal.exec_spawn = True
-        journal.less_cmds = []
+        journal.cat_cmds = []
         journal.no_pager = True
         x = journal.tail_log_file(log_file1)
-        self.assertEq(x, 0)
+        self.assertEq(x, 1)
         app.logg.info("======== no tail")
         journal = app.SystemctlJournal(files)
         journal.exec_spawn = True
