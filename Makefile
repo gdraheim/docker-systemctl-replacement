@@ -4,6 +4,8 @@ BASEYEAR=2025
 FOR=today
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
+default: help nam ver
+
 -include Make_detect_py.mk
 
 UBUNTU=ubuntu:18.04
@@ -15,9 +17,6 @@ COVERAGE3 = $(PYTHON3) -m coverage
 GIT=git
 VERFILES = files/docker/systemctl3.py tests/*tests.py tests/*.dockerfile pyproject.toml 
 VV=-vv
-
-verfiles:
-	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
 
 version:
 	@ grep -l __version__ $(VERFILES) | { while read f; do : \
@@ -34,8 +33,10 @@ version:
 	@ grep ^__version__ $(VERFILES)
 	@ grep ^version.= $(VERFILES)
 	@ $(GIT) add $(VERFILES) || true
-	@ ver=`cat files/docker/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	@ ver=`sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml` \
 	; echo "# $(GIT) commit -m v$$ver"
+nam: ; @ sed -e '/^name *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
+ver: ; @ sed -e '/^version *=/!d' -e 's/.*= *"//' -e 's/".*//' -e q pyproject.toml
 
 help:
 	$(PYTHON3) files/docker/systemctl3.py help
