@@ -379,6 +379,9 @@ install3:
 	$(MAKE) $(SRC)
 	$(PIP3) install --no-compile --user .
 	$(MAKE) buildclean
+	systemctl.py --version
+	systemctl3.py --version
+	systemctl3 --version
 	$(MAKE) show3 | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
 uns uninstall: ; $(MAKE) uninstall3 PYTHON3=$(PYTHON39)
