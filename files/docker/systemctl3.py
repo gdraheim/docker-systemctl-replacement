@@ -6158,26 +6158,32 @@ class Systemctl:
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
                 for unit in self.enabled_target_configured_system_units(targets, ".target", igno + self.igno_targets):
+                    logg.error("%s configured %s [target]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.required_target_units(targets, ".socket", igno):
+                    logg.error("%s required %s [socket]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_installed_system_units(targets, ".socket", igno):
+                    logg.error("%s installed %s [sockert]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.required_target_units(targets, ".service", igno):
+                    logg.error("%s required %s [service]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_installed_system_units(targets, ".service", igno):
+                    logg.error("%s installed %s [service]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_sysv_units(targets, sysv, igno):
+                    logg.error("%s enabled %s [sysv]", targets, units)
                     if unit not in units:
                         units.append(unit)
         return units
@@ -6281,6 +6287,11 @@ class Systemctl:
                 if m:
                     service = m.group(1)
                     unit = service + ".service"
+                    if unit in self.unitfiles._file_for_unit:
+                        # If a service does not exist as systemd service then the systemd-sysv-generator may generate
+                        # one from the init.d script, so if both exist then the sysv init.d script is ignored.
+                        logg.info("sysv ignored as systemd descriptor exists (you need to clean up the system)")
+                        continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     units.append(unit)
