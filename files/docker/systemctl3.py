@@ -124,6 +124,38 @@ _preset_folders: List[str] = [
     "/lib/systemd/system-preset",
 ]
 
+_ignore_units: Dict[str, Dict[str, str]] = {
+  "default" : {
+    "centos": """
+      netconsole
+      network
+    """,
+    "opensuse": """
+      raw
+      pppoe
+      *.local
+      boot.*
+      rpmconf*
+      postfix*
+    """,
+    "ubuntu": """
+      network*
+      umount*
+      ondemand
+      *.local
+      e2scrub_reap
+    """,
+    "always": """
+       purge-kernels.service
+       after-local.service
+       dm-event.*
+    """,
+    "targets": """
+      remote-fs.target
+    """
+  }
+}
+
 # standard paths
 _dev_null = "/dev/null"
 _dev_zero = "/dev/zero"
@@ -162,15 +194,16 @@ ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME
 LocaleConf="/etc/locale.conf"
 DefaultListenBacklog=2
 
-DefaultUnit: str = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
-DefaultTarget: str = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
-# LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
-# LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
-# LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
-# ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
-DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
-DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
-DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+# these can be overridden with environment variables of the same name
+SYSTEMD_DEFAULT_UNIT = "default.target" # systemd.exe --unit=default.target
+SYSTEMD_DEFAULT_TARGET = "multi-user.target" # DefaultUnit fallback
+# SYSTEMD_LOG_LEVEL ="info" # systemd.exe --log-level
+# SYSTEMD_LOG_TARGET = "journal-or-kmsg" # systemd.exe --log-target
+# SYSTEMD_LOG_LOCATION = no" # systemd.exe --log-location
+# SYSTEMD_SHOW_STATUS = "auto" # systemd.exe --show-status
+SYSTEMD_STANDARD_INPUT = "null"
+SYSTEMD_STANDARD_OUTPUT = "journal" # systemd.exe --default-standard-output
+SYSTEMD_STANDARD_ERROR = "inherit" # systemd.exe --default-standard-error
 
 EXEC_SPAWN = False
 EXEC_DUP2 = True
@@ -2572,8 +2605,14 @@ class SystemctlJournal:
     tail_cmds: List[str]
     less_cmds: List[str]
     cat_cmds: List[str]
+    DefaultStandardInput: str
+    DefaultStandardOutput: str
+    DefaultStandardError: str
     def __init__(self, unitfiles: Optional[SystemctlUnitFiles] = None) -> None:
         self.unitfiles = unitfiles or SystemctlUnitFiles(_root)
+        self.DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", SYSTEMD_STANDARD_INPUT)
+        self.DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", SYSTEMD_STANDARD_OUTPUT) # systemd.exe --default-standard-output
+        self.DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", SYSTEMD_STANDARD_ERROR) # systemd.exe --default-standard-error
         self._log_file = {}
         self._log_hold = {}
         self._log_folder = _journal_log_folder
@@ -2645,8 +2684,8 @@ class SystemctlJournal:
     def skip_log(self, conf: SystemctlConf) -> bool:
         if get_unit_type(conf.name()) not in ["service"]:
             return True
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        std_out = conf.get(Service, "StandardOutput", self.DefaultStandardOutput)
+        std_err = conf.get(Service, "StandardError", self.DefaultStandardError)
         out, err = False, False
         if std_out in ["null"]:
             out = True
@@ -2731,9 +2770,9 @@ class SystemctlJournal:
     def open_standard_log(self, conf: SystemctlConf) -> SystemctlStandardInpOutErr:
         out: Optional[TextIO]
         msg = ""
-        std_inp = conf.get(Service, "StandardInput", DefaultStandardInput)
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        std_inp = conf.get(Service, "StandardInput", self.DefaultStandardInput)
+        std_out = conf.get(Service, "StandardOutput", self.DefaultStandardOutput)
+        std_err = conf.get(Service, "StandardError", self.DefaultStandardError)
         inp, out, err = None, None, None
         if std_inp in ["null"]:
             inp = open(_dev_null, "r")
@@ -2872,7 +2911,6 @@ class Systemctl:
     _unit_type: Optional[str]
     _systemd_version: int
     _pid_file_folder: str
-    _default_target: str
     _sysinit_target: Optional[SystemctlConf]
     exit_mode: int
     init_mode: int
@@ -2884,9 +2922,13 @@ class Systemctl:
     loop_sleep: int
     loop_lock: threading.Lock
     unitfiles: SystemctlUnitFiles
+    DefaultUnit: str
+    DefaultTarget: str
     def __init__(self, root: Optional[str] = None) -> None:
         self._root = root or _root
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
+        self.DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", SYSTEMD_DEFAULT_UNIT)
+        self.DefaultTarget = os.environ.get("SYSTEMD_DEFAULT_TARGET", SYSTEMD_DEFAULT_TARGET) 
         # from command line options or the defaults
         self._extra_vars = _extra_vars
         self._force = _force
@@ -2905,7 +2947,6 @@ class Systemctl:
         self._systemd_version = SystemCompatibilityVersion
         # and the actual internal runtime state
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
-        self._default_target = DefaultTarget
         self._sysinit_target = None # stores a UnitConf()
         self.exit_mode = EXIT_MODE or 0
         self.init_mode = INIT_MODE or 0
@@ -5258,7 +5299,7 @@ class Systemctl:
     def get_active_target_list(self) -> List[str]:
         current_target = self.get_default_target()
         target_list = self.unitfiles.get_target_list(current_target)
-        target_list += [DefaultUnit] # upper end
+        target_list += [self.DefaultUnit] # upper end
         target_list += [SysInitTarget] # lower end
         return target_list
     def get_substate_from(self, conf: SystemctlConf) -> Optional[str]:
@@ -6271,7 +6312,7 @@ class Systemctl:
         igno = igno if igno else []
         units: List[str] = []
         folders: List[str] = []
-        if target in ["multi-user.target", DefaultUnit]:
+        if target in ["multi-user.target", self.DefaultUnit]:
             folders += [self.rc3_root_folder()]
         if target in ["graphical.target"]:
             folders += [self.rc5_root_folder()]
@@ -6386,10 +6427,10 @@ class Systemctl:
         return os_path(self._root, self.mask_folder())
     def get_default_target_file(self) -> str:
         targets_folder = self.get_targets_folder()
-        return os.path.join(targets_folder, DefaultUnit)
+        return os.path.join(targets_folder, self.DefaultUnit)
     def get_default_target(self, default_target: Optional[str] = None) -> str:
         """ get-default -- get current default run-level"""
-        current = default_target or self._default_target
+        current = default_target or self.DefaultTarget
         default_target_file = self.get_default_target_file()
         if os.path.islink(default_target_file):
             current = os.path.basename(os.readlink(default_target_file))
