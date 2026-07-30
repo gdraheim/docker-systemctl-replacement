@@ -6196,7 +6196,39 @@ class Systemctl:
             logg.debug(" %s # %s", " ".join(units), target)
             for unit in units:
                 if unit not in results:
-                    results.append(unit)
+                    if not _only_property:
+                        results.append(unit)
+                    else:
+                        conf = self.unitfiles.get_conf(unit)
+                        line = ""
+                        for prop in _only_property:
+                            val = NIX
+                            if prop in ("name","names","list"):
+                                val = unit
+                            elif prop in ("path","file","files"):
+                                val = conf.filename()
+                            elif prop in ("package"):
+                                filename = conf.filename()
+                                import subprocess
+                                if os.path.exists("/usr/bin/rpm"):
+                                    val = subprocess.getoutput(F"/usr/bin/rpm -q --whatprovides '{filename}'")
+                                elif os.path.exists("/usr/bin/dpkg-query"):
+                                    filename = filename.replace("/usr/lib/systemd/", "/lib/systemd/")
+                                    info = subprocess.getoutput(F"/usr/bin/dpkg-query -S '{filename}'")
+                                    if ":" in info:
+                                        packages, fileref = info.split(":", 1)
+                                        if "," in packages:
+                                            package, others = packages.split(",", 1)
+                                        else:
+                                            package = packages
+                                        fullpackage = subprocess.getoutput(F"/usr/bin/dpkg-query --show '{package}'")
+                                        val = fullpackage.replace("\t", "-")
+                            else:
+                                val = conf.get("Unit", prop, NIX)
+                                if val is NIX:
+                                    logg.info("no property '%s' for default-service '%s'", prop, unit)
+                            line = val if not line else line + "\t" + val
+                        results.append(line)
         return results
     def target_default_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]:
         """ get the default services for a target - this will ignore a number of services,
