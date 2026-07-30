@@ -1,7 +1,7 @@
 RELEASE 1.7
 
-Python2 systemctl.py has been removed. If you need then use pip to
-install the pypi.org package which contains the python2 variant.
+Python2 systemctl.py has been removed from the source tree. If you need it 
+then use pip to install the pypi.org package which contains the python2 variant.
 
 The pypi and 'make ins' package can now called as module-tool,
 that is `python3.11 -m systemctl3` is now ready for use.
