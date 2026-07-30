@@ -1,6 +1,6 @@
 FROM almalinux:9.4
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.7.1097"
+      __version__="1.7.1303"
 
 ###############################################################################
 ### WARNING: the phpmyadmin package has not been ported to EPEL 8 (07/2020) ###
