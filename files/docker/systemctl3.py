@@ -55,6 +55,7 @@ DEBUG_EXPAND: int = logging.NOTSET
 INFO_EXPAND: int = logging.INFO
 DEBUG_RESULT: int = logging.NOTSET
 TRACE_RESULT: int = logging.NOTSET
+DEBUG_TARGET_LIST: int = logging.NOTSET
 TestListen = False
 TestAccept = False
 
@@ -125,10 +126,28 @@ _preset_folders: List[str] = [
 ]
 
 _ignore_units: Dict[str, Dict[str, str]] = {
+  "always" : {
+    "system": """
+      network*
+      dbus*
+      systemd-*
+      kdump*
+      kmod*
+    """,
+    "services": """
+       purge-kernels.service
+       after-local.service
+       dm-event.*
+    """,
+    "targets": """
+      remote-fs.target
+    """
+  },
   "default" : {
     "centos": """
       netconsole
       network
+      console-setup.*
     """,
     "opensuse": """
       raw
@@ -144,14 +163,6 @@ _ignore_units: Dict[str, Dict[str, str]] = {
       ondemand
       *.local
       e2scrub_reap
-    """,
-    "always": """
-       purge-kernels.service
-       after-local.service
-       dm-event.*
-    """,
-    "targets": """
-      remote-fs.target
     """
   }
 }
@@ -204,6 +215,10 @@ SYSTEMD_DEFAULT_TARGET = "multi-user.target" # DefaultUnit fallback
 SYSTEMD_STANDARD_INPUT = "null"
 SYSTEMD_STANDARD_OUTPUT = "journal" # systemd.exe --default-standard-output
 SYSTEMD_STANDARD_ERROR = "inherit" # systemd.exe --default-standard-error
+SYSTEMD_IGNORES0 = "always"
+SYSTEMD_IGNORES1 = "default" # see _ignore_units
+SYSTEMD_IGNORES2 = "" # may point to a directory
+SYSTEMD_IGNORES3 = "" # may point to a directory
 
 EXEC_SPAWN = False
 EXEC_DUP2 = True
@@ -6123,12 +6138,43 @@ class Systemctl:
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
     #
-    igno_centos = ["netconsole", "network"]
-    igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
-    igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local", "e2scrub_reap"]
-    igno_always = ["network*", "dbus*", "systemd-*", "kdump*", "kmod*"]
-    igno_always += ["purge-kernels.service", "after-local.service", "dm-event.*"] # as on opensuse
-    igno_targets = ["remote-fs.target"]
+    def expand_ignore_list(self, folders: List[str]) -> List[str]:
+        igno = []
+        for folder in folders:
+            if not folder:
+                continue
+            try:
+                if folder in _ignore_units:
+                    for _, patterns in _ignore_units[folder].items():
+                        for pattern_line in patterns.splitlines():
+                            pattern = pattern_line.strip()
+                            if not pattern or pattern.startswith("#"):
+                                continue
+                            igno.append(pattern)
+                elif os.path.isdir(folder):
+                    for filename in os.listdir(folder):
+                        filepath = os.path.join(folder, filename)
+                        if not os.path.isfile(filepath):
+                            continue
+                        for line in open(filepath, "r", encoding="utf-8"):
+                            pattern = line.strip()
+                            if not pattern or pattern.startswith("#"):
+                                continue
+                            igno.append(pattern)
+                elif os.path.isfile(folder):
+                    filepath = folder
+                    if os.path.isfile(filepath):
+                        for line in open(filepath, "r", encoding="utf-8"):
+                            pattern = line.strip()
+                            if not pattern or pattern.startswith("#"):
+                                continue
+                            igno.append(pattern)
+                else:
+                    logg.error("did not find ignore folder %s", folder)
+            except OSError as e:
+                logg.error("could not read ignore folder %s", folder)
+        logg.log(DEBUG_TARGET_LIST, "loaded igno patterns = %s", igno)
+        return igno
     def _ignored_unit(self, unit: str, ignore_list: List[str]) -> bool:
         for ignore in ignore_list:
             if fnmatch.fnmatchcase(unit, ignore):
@@ -6156,11 +6202,16 @@ class Systemctl:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' and --force' to get more services.
         """
-        igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
+        ignores_0 = os.environ.get("SYSTEMD_IGNORESO", SYSTEMD_IGNORES0) # "always"
+        ignores_1 = os.environ.get("SYSTEMD_IGNORES1", SYSTEMD_IGNORES1) # "default"
+        ignores_2 = os.environ.get("SYSTEMD_IGNORES2", SYSTEMD_IGNORES2) # ""
+        ignores_3 = os.environ.get("SYSTEMD_IGNORES3", SYSTEMD_IGNORES3) # ""
+        igno = [ignores_3, ignores_2, ignores_1, ignores_0 ]
         if self._show_all:
-            igno = self.igno_always
+            igno = [ ignores_0 ]
             if self._force:
                 igno = []
+        igno = self.expand_ignore_list(igno)
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
@@ -6198,33 +6249,33 @@ class Systemctl:
             targetlist = self.unitfiles.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
-                for unit in self.enabled_target_configured_system_units(targets, ".target", igno + self.igno_targets):
-                    logg.error("%s configured %s [target]", targets, units)
+                for unit in self.enabled_target_configured_system_units(targets, ".target", igno):
+                    logg.log(DEBUG_TARGET_LIST, "%s configured %s [target]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.required_target_units(targets, ".socket", igno):
-                    logg.error("%s required %s [socket]", targets, units)
+                    logg.log(DEBUG_TARGET_LIST, "%s required %s [socket]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_installed_system_units(targets, ".socket", igno):
-                    logg.error("%s installed %s [sockert]", targets, units)
+                    logg.log(DEBUG_TARGET_LIST, "%s installed %s [sockert]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.required_target_units(targets, ".service", igno):
-                    logg.error("%s required %s [service]", targets, units)
+                    logg.log(DEBUG_TARGET_LIST, "%s required %s [service]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_installed_system_units(targets, ".service", igno):
-                    logg.error("%s installed %s [service]", targets, units)
+                    logg.log(DEBUG_TARGET_LIST, "%s installed %s [service]", targets, units)
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_sysv_units(targets, sysv, igno):
-                    logg.error("%s enabled %s [sysv]", targets, units)
+                    logg.log(DEBUG_TARGET_LIST, "%s enabled %s [sysv]", targets, units)
                     if unit not in units:
                         units.append(unit)
         return units
