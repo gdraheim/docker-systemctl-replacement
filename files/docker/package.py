@@ -32,6 +32,38 @@ ALL = "*"
 RPM_QUERY = "/usr/bin/rpm"
 DEB_QUERY = "/usr/bin/dpkg-query"
 
+def whatprovides(filename):
+    if fs.exists(RPM_QUERY):
+        run = pc.run([RPM_QUERY, "-q", "--whatprovides", filename], stdout=pc.PIPE, check=False)
+        if run:
+            return run.stdout.decode("utf-8").strip()
+    elif fs.exists(DEB_QUERY):
+        filename = filename.replace("/usr/lib/systemd/", "/lib/systemd/")
+        run = pc.run([DEB_QUERY, "-S", filename], stdout=pc.PIPE, check=False)
+        if b":" in run.stdout:
+            packages, fileref = run.stdout.split(b":", 1)
+            if b"," in packages:
+                package, others = packages.split(b",", 1)
+            else:
+                package = packages
+            fullpackage = pc.run([DEB_QUERY, "--show", package.decode('utf-8')], stdout=pc.PIPE, check=False)
+            val = fullpackage.stdout.decode("utf-8").replace("\t", "-")
+            if val:
+                return val.strip()
+    return NIX
+
+def installed():
+    if fs.exists("/usr/bin/rpm"):
+        run = pc.run(["/usr/bin/rpm", "-qa"], stdout=pc.PIPE, check=False)
+        return run.stdout.decode("utf-8")
+    elif fs.exists("/usr/bin/dpkg-query"):
+        run = pc.run(["/usr/bin/dpkg-query", "-l"], stdout=pc.PIPE, check=False)
+        return run.stdout.decode("utf-8")
+    else:
+        logg.error("unknown package manager")
+        run = None
+    return NIX
+
 def main() -> int:
     # pylint: disable=global-statement
     import optparse # pylint: disable=deprecated-module # not anymore
@@ -48,15 +80,9 @@ def main() -> int:
     hdr = []
     dat = []
     if cmd in ["list", "installed"]:
-        if fs.exists("/usr/bin/rpm"):
-            run = pc.run(["/usr/bin/rpm", "-qa"], stdout=pc.PIPE, check=False)
-        elif fs.exists("/usr/bin/dpkg-query"):
-            run = pc.run(["/usr/bin/dpkg-query", "-l"], stdout=pc.PIPE, check=False)
-        else:
-            logg.error("unknown package manager")
-            run = None
-        if run:
-            for out_line in run.stdout.decode("utf-8").splitlines():
+        packages = installed()
+        if packages:
+            for out_line in packages.splitlines():
                 line = out_line.strip()
                 if args:
                     for arg in args:
@@ -68,24 +94,18 @@ def main() -> int:
         hdr=["package"]
     elif cmd in ["for","file", "whatprovides"]:
         for filename in args:
-            if fs.exists(RPM_QUERY):
-                run = pc.run([RPM_QUERY, "-q", "--whatprovides", filename], stdout=pc.PIPE, check=False)
-                if run:
-                    dat.append({"package": run.stdout.decode("utf-8").strip(), "file": filename})
-            elif fs.exists(DEB_QUERY):
-                filename = filename.replace("/usr/lib/systemd/", "/lib/systemd/")
-                run = pc.run([DEB_QUERY, "-S", filename], stdout=pc.PIPE, check=False)
-                if ":" in run.stdout:
-                    packages, fileref = run.stdout.split(":", 1)
-                    if "," in packages:
-                        package, others = packages.split(",", 1)
-                    else:
-                        package = packages
-                    fullpackage = pc.run([DEB_QUERY, "--show", package], stdout=pc.PIPE, check=False)
-                    val = fullpackage.stdout.decode("utf-8").replace("\t", "-")
-                    if val:
-                        dat.append({"package": val, "file": filename})
+            val = whatprovides(filename)
+            dat.append({"package": val, "file": filename})
         hdr = ["package", "file"]
+    elif cmd in ["default-services"]:
+        from systemctl3 import Systemctl
+        systemctl = Systemctl()
+        enabled = systemctl.target_default_services()
+        for unit in enabled:
+            filename = systemctl.unit_property(unit, "path")
+            package = whatprovides(filename)
+            dat.append({"package": package, "service": unit})
+        hdr = ["service", "package"]
     out = open(output, "w", encoding=("utf-8")) if "." in output else sys.stdout
     fmt = output.rsplit(".", 1)[1] if "." in output else output
     delimiters = {"csv": ",", "zsv": ";", "tsv": "\t", "dat": "|", "data": "|"}

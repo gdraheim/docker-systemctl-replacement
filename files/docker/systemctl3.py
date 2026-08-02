@@ -6199,30 +6199,31 @@ class Systemctl:
                     if not _only_property:
                         results.append(unit)
                     else:
-                        conf = self.unitfiles.get_conf(unit)
                         line = ""
                         for prop in _only_property:
-                            val = NIX
-                            if prop in ("name","names","list"):
-                                val = unit
-                            elif prop in ("path","file","files"):
-                                val = conf.filename()
-                            else:
-                                val = conf.get("Unit", prop, NIX)
-                                if val is NIX:
-                                    if unit.endswith(".service"):
-                                        val = conf.get("Service", prop, NIX)
-                                    elif unit.endswith(".target"):
-                                        val = conf.get("Target", prop, NIX)
-                                    elif unit.endswith(".Socket"):
-                                        val = conf.get("Socket", prop, NIX)
-                                if val is NIX:
-                                    logg.info("no property '%s' for default-service '%s'", prop, unit)
-                                else:
-                                    val = "'" + val.replace("'", "''") + "'"
+                            val = self.unit_property(unit, prop)
                             line = val if not line else line + "\t" + val
                         results.append(line)
         return results
+    def unit_property(self, unit: str, prop: str) -> str:
+        conf = self.unitfiles.get_conf(unit)
+        if prop in ("name","names","list"):
+            return unit
+        if prop in ("path","file","files"):
+            return conf.filename()
+        val = conf.get("Unit", prop, NIX)
+        if val is NIX:
+            if unit.endswith(".service"):
+                val = conf.get("Service", prop, NIX)
+            elif unit.endswith(".target"):
+                val = conf.get("Target", prop, NIX)
+            elif unit.endswith(".Socket"):
+                val = conf.get("Socket", prop, NIX)
+        if val is NIX:
+            logg.info("no property '%s' for default-service '%s'", prop, unit)
+            return NIX
+        else:
+            return "'" + val.replace("'", "''") + "'"
     def target_default_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' and --force' to get more services.
