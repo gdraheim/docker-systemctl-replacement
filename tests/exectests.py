@@ -8882,7 +8882,59 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3020_default_services(self) -> None:
+    def test_3020_default_service_properties(self) -> None:
+        """ check the 'default-services' to know show units with propties """
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        self.assertEqual(out, "zzc.service\n")
+        #
+        cmd = "{systemctl} default-services -p file"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        self.assertEqual(out.strip(), os_path(root, "/etc/systemd/system/zzc.service"))
+        #
+        cmd = "{systemctl} default-services -p name -p ExecStart -p Description"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        self.assertEqual(out, "zzc.service\t'/bin/sleep 2'\t'Testing C'\n")
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3021_default_services(self) -> None:
         """ check the 'default-services' to know the enabled services """
         self.begin()
         testname = self.testname()
@@ -8942,7 +8994,7 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3021_default_services(self) -> None:
+    def test_3022_default_services(self) -> None:
         """ check that 'default-services' skips some known services """
         self.begin()
         testname = self.testname()
@@ -9028,9 +9080,9 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3022_default_services_with_force(self) -> None:
-        self.test_3022_default_services_with_force(True)
-    def test_3022_default_services_with_force(self, real: bool = False) -> None:
+    def real_3023_default_services_with_force(self) -> None:
+        self.test_3023_default_services_with_force(True)
+    def test_3023_default_services_with_force(self, real: bool = False) -> None:
         """ check that 'enable' can force services and targets """
         vv = self.begin()
         testname = self.testname()
