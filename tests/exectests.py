@@ -2097,7 +2097,7 @@ class SystemctlBaseTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
     def real_1301_get_default(self) -> None:
-        self.test_1201_get_default(True)
+        self.test_1301_get_default(True)
     def test_1301_get_default(self, real: bool = False) -> None:
         """ check that get-default works"""
         testname = self.testname()
