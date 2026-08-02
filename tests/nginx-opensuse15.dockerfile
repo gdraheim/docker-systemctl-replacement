@@ -1,6 +1,6 @@
 FROM opensuse/leap:15.6
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.7.1303"
+      __version__="1.7.1307"
 
 ARG PYTHON=python3
 ARG PYTHONPKG=${PYTHON}
