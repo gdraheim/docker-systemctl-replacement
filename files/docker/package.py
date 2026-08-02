@@ -33,13 +33,17 @@ RPM_QUERY = "/usr/bin/rpm"
 DEB_QUERY = "/usr/bin/dpkg-query"
 
 def whatprovides(filename):
+    if not filename:
+        return NIX
     if fs.exists(RPM_QUERY):
         run = pc.run([RPM_QUERY, "-q", "--whatprovides", filename], stdout=pc.PIPE, check=False)
         if run:
             return run.stdout.decode("utf-8").strip()
     elif fs.exists(DEB_QUERY):
-        filename = filename.replace("/usr/lib/systemd/", "/lib/systemd/")
         run = pc.run([DEB_QUERY, "-S", filename], stdout=pc.PIPE, check=False)
+        if run.returncode:
+            filename = filename.replace("/usr/lib/systemd/", "/lib/systemd/")
+            run = pc.run([DEB_QUERY, "-S", filename], stdout=pc.PIPE, check=False)
         if b":" in run.stdout:
             packages, fileref = run.stdout.split(b":", 1)
             if b"," in packages:
