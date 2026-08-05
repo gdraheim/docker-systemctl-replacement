@@ -2759,11 +2759,15 @@ class SystemctlJournal:
                 print("less command not found")
                 return 1
             cmd = [less_cmd, log_path]
+            env = os.environ.copy()
+            env["LESSSECURE"] = "1"
+            env.pop("LESSOPEN", None)
+            env.pop("LESSCLOSE", None)
             logg.debug("journalctl %s -> %s", unit, cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             if self.exec_spawn:
-                return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
-            return os.execvp(cmd_args[0], cmd_args) # pragma: no cover
+                return os.spawnvpe(os.P_WAIT, cmd_args[0], cmd_args, env)
+            return os.execvpe(cmd_args[0], cmd_args, env) # pragma: no cover
     def get_log_from(self, conf: SystemctlConf) -> str:
         return self.unitfiles.os_path(self.get_log(conf))
     def get_log(self, conf: SystemctlConf) -> str:
